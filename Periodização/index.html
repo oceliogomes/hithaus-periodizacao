@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script>
+  const hash = window.location.hash;
+  const redirectTo = localStorage.getItem('hh_redirect') || 'relatorios.html';
+  
+  if (hash && hash.includes('access_token')) {
+    window.location.href = redirectTo + window.location.hash;
+  } else {
+    window.location.href = 'relatorios.html';
+  }
+</script>
+</head>
+<body></body>
+</html>
