@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hit Haus — Relatórios</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green: #00FF7F;
+    --black: #000000;
+    --bg: #0A0A0A;
+    --card: #111111;
+    --card2: #181818;
+    --border: #2a2a2a;
+    --border-green: #00FF7F44;
+    --text: #FFFFFF;
+    --text-muted: #888888;
+    --red: #FF4444;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  header {
+    background: var(--black);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-logo { display: flex; align-items: center; gap: 12px; }
+  .header-logo svg { width: 32px; height: 32px; }
+  .header-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; }
+  .header-title span { color: var(--green); }
+  .header-badge { background: var(--green); color: var(--black); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 2px; letter-spacing: 1px; text-transform: uppercase; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+
+  .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 42px; letter-spacing: 3px; margin-bottom: 4px; line-height: 1; }
+  .page-title span { color: var(--green); }
+  .page-subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 32px; }
+
+  /* MÉTRICAS */
+  .metricas-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .metrica-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 18px 20px;
+  }
+
+  .metrica-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .metrica-valor {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 1px;
+    color: var(--green);
+    line-height: 1;
+  }
+
+  .metrica-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* FILTROS */
+  .filtros-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+
+  .filtros-titulo {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+
+  .filtros-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr) auto;
+    gap: 12px;
+    align-items: end;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+  }
+
+  input, select {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 9px 14px;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+
+  input:focus, select:focus { border-color: var(--green); }
+  select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2300FF7F' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  select option { background: #1a1a1a; }
+  input::placeholder { color: #444; }
+
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 9px 18px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .btn-primary { background: var(--green); color: var(--black); font-weight: 700; }
+  .btn-primary:hover { background: #00e070; }
+
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+  .btn-outline:hover { border-color: var(--green); color: var(--green); }
+
+  .btn-export { background: transparent; border: 1px solid #2a4a3a; color: #00cc66; font-size: 12px; padding: 7px 14px; }
+  .btn-export:hover { background: #002a15; border-color: var(--green); }
+
+  .btn-pdf { background: transparent; border: 1px solid #4a2a2a; color: #ff8866; font-size: 12px; padding: 7px 14px; }
+  .btn-pdf:hover { background: #2a0a0a; border-color: var(--red); color: var(--red); }
+
+  /* RESULTADOS */
+  .resultados-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .resultados-info {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .resultados-info strong { color: var(--text); }
+
+  .export-buttons { display: flex; gap: 8px; }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 20px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+    letter-spacing: 0.3px;
+  }
+
+  .tab:hover { color: var(--text); }
+  .tab.ativo { color: var(--green); border-bottom-color: var(--green); }
+
+  /* TABELA */
+  .tabela-wrapper {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead {
+    background: var(--black);
+  }
+
+  th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #1a1a1a;
+    vertical-align: middle;
+    color: var(--text);
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #141414; }
+
+  .badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .badge-modalidade { background: #001a0a; border: 1px solid #003a1a; color: var(--green); }
+  .badge-grupo { background: #0a0a1a; border: 1px solid #1a1a3a; color: #8888ff; }
+  .badge-semana { background: #1a1200; border: 1px solid #3a2800; color: #ffcc00; }
+
+  .link-yt {
+    color: #ff6666;
+    text-decoration: none;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .link-yt:hover { color: #ff4444; }
+
+  /* GRÁFICO DE BARRAS SIMPLES */
+  .grafico-container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px;
+  }
+
+  .grafico-titulo {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+  }
+
+  .barra-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .barra-label {
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 120px;
+    color: var(--text);
+  }
+
+  .barra-track {
+    flex: 1;
+    background: var(--card2);
+    border-radius: 2px;
+    height: 8px;
+    overflow: hidden;
+  }
+
+  .barra-fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+
+  .barra-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    min-width: 30px;
+    text-align: right;
+  }
+
+  /* ESTADO VAZIO / LOADING */
+  .estado {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-muted);
+  }
+
+  .estado h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  @media (max-width: 768px) {
+    .metricas-grid { grid-template-columns: 1fr 1fr; }
+    .filtros-grid { grid-template-columns: 1fr 1fr; }
+    header { padding: 0 16px; }
+    main { padding: 24px 16px; }
+    .page-title { font-size: 32px; }
+    .export-buttons { width: 100%; }
+  }
+
+  @media (max-width: 480px) {
+    .metricas-grid { grid-template-columns: 1fr 1fr; }
+    .filtros-grid { grid-template-columns: 1fr; }
+  }
+
+  @media print {
+    header, .filtros-card, .tabs, .export-buttons, .resultados-header .btn { display: none !important; }
+    body { background: white; color: black; }
+    .tabela-wrapper { border: 1px solid #ccc; }
+    th { background: #f0f0f0; color: black; }
+    td { color: black; border-bottom: 1px solid #eee; }
+    .badge-modalidade { background: #e0ffe0; color: #006600; border-color: #006600; }
+    .badge-grupo { background: #e0e0ff; color: #000066; border-color: #000066; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-logo">
+    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="50" cy="50" rx="48" ry="48" fill="white"/>
+      <ellipse cx="50" cy="50" rx="34" ry="22" stroke="#000" stroke-width="9" fill="none"/>
+      <line x1="16" y1="50" x2="84" y2="50" stroke="#000" stroke-width="9"/>
+      <rect x="44" y="28" width="12" height="10" fill="white"/>
+      <rect x="44" y="62" width="12" height="10" fill="white"/>
+    </svg>
+    <span class="header-title">HIT<span>HAUS</span></span>
+  </div>
+  <span class="header-badge">Relatórios</span>
+</header>
+
+<main>
+  <h1 class="page-title">RELATÓRIOS <span>& MÉTRICAS</span></h1>
+  <p class="page-subtitle">Visão geral da periodização — todos os dados da academia em um lugar.</p>
+
+  <!-- MÉTRICAS GERAIS -->
+  <div class="metricas-grid" id="metricas-grid">
+    <div class="metrica-card"><div class="metrica-label">Carregando...</div><div class="metrica-valor">—</div></div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="filtros-card">
+    <div class="filtros-titulo">Filtros</div>
+    <div class="filtros-grid">
+      <div class="field">
+        <label>Modalidade</label>
+        <select id="f-modalidade" onchange="aplicarFiltros()">
+          <option value="">Todas</option>
+          <option>Bike</option>
+          <option>Run</option>
+          <option>Boxe</option>
+          <option>Reshape</option>
+          <option>Hit Training</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Grupo de Movimento</label>
+        <select id="f-grupo" onchange="aplicarFiltros()">
+          <option value="">Todos</option>
+          <option>Agachamento</option>
+          <option>Empurrar</option>
+          <option>Puxar</option>
+          <option>Dobramento</option>
+          <option>Passada</option>
+          <option>Core</option>
+          <option>Rotação</option>
+          <option>Cardio</option>
+          <option>Mobilidade</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Semana do Mês</label>
+        <select id="f-semana" onchange="aplicarFiltros()">
+          <option value="">Todas</option>
+          <option value="1">Semana 1</option>
+          <option value="2">Semana 2</option>
+          <option value="3">Semana 3</option>
+          <option value="4">Semana 4</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Foco Muscular</label>
+        <input type="text" id="f-foco" placeholder="Ex: Glúteo" oninput="aplicarFiltros()">
+      </div>
+      <div class="field">
+        <label>Exercício</label>
+        <input type="text" id="f-exercicio" placeholder="Ex: Agachamento" oninput="aplicarFiltros()">
+      </div>
+      <button class="btn btn-outline" onclick="limparFiltros()">Limpar</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap">
+      <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted)">Período:</span>
+      <div class="field" style="flex-direction:row;align-items:center;gap:8px">
+        <label style="white-space:nowrap">De</label>
+        <input type="date" id="f-data-de" onchange="aplicarFiltros()" style="width:160px">
+      </div>
+      <div class="field" style="flex-direction:row;align-items:center;gap:8px">
+        <label style="white-space:nowrap">Até</label>
+        <input type="date" id="f-data-ate" onchange="aplicarFiltros()" style="width:160px">
+      </div>
+      <button class="btn btn-outline" onclick="limparPeriodo()" style="font-size:12px;padding:7px 14px">Limpar período</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab ativo" onclick="mudarTab('exercicios', this)">Exercícios</button>
+    <button class="tab" onclick="mudarTab('treinos', this)">Treinos</button>
+    <button class="tab" onclick="mudarTab('graficos', this)">Análise Visual</button>
+    <button class="tab" onclick="mudarTab('logs', this)">Logs de Acesso</button>
+  </div>
+
+  <!-- RESULTADOS HEADER -->
+  <div class="resultados-header">
+    <div class="resultados-info" id="resultados-info">Carregando dados...</div>
+    <div class="export-buttons">
+      <button class="btn btn-export" onclick="exportarExcel()">⬇ Exportar Excel</button>
+      <button class="btn btn-pdf" onclick="exportarPDF()">⬇ Exportar PDF</button>
+    </div>
+  </div>
+
+  <!-- CONTEÚDO DAS TABS -->
+  <div id="tab-exercicios">
+    <div class="tabela-wrapper">
+      <table id="tabela-exercicios">
+        <thead>
+          <tr>
+            <th>Exercício</th>
+            <th>Grupo</th>
+            <th>Material</th>
+            <th>Repetições</th>
+            <th>Cadência</th>
+            <th>Modalidade</th>
+            <th>Dia</th>
+            <th>Semana</th>
+            <th>Foco Muscular</th>
+            <th>Vídeo</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-exercicios">
+          <tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted)">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="tab-treinos" style="display:none">
+    <div class="tabela-wrapper">
+      <table id="tabela-treinos">
+        <thead>
+          <tr>
+            <th>Modalidade</th>
+            <th>Dia</th>
+            <th>Semana</th>
+            <th>Foco Muscular</th>
+            <th>Materials</th>
+            <th>Mentor</th>
+            <th>Blocos</th>
+            <th>Exercícios</th>
+            <th>Data da Aula</th>
+            <th>Cadastrado em</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-treinos">
+          <tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted)">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="tab-logs" style="display:none">
+    <div class="tabela-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Professor</th>
+            <th>E-mail</th>
+            <th>Modalidade</th>
+            <th>Dia</th>
+            <th>Semana</th>
+            <th>Foco Muscular</th>
+            <th>Acessado em</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-logs">
+          <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="tab-graficos" style="display:none">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="grafico-container">
+        <div class="grafico-titulo">Exercícios por Grupo de Movimento</div>
+        <div id="grafico-grupos"></div>
+      </div>
+      <div class="grafico-container">
+        <div class="grafico-titulo">Exercícios por Modalidade</div>
+        <div id="grafico-modalidades"></div>
+      </div>
+      <div class="grafico-container" style="grid-column:1/-1">
+        <div class="grafico-titulo">Treinos por Semana do Mês</div>
+        <div id="grafico-semanas"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  const SUPABASE_URL = 'https://weptswkvywbqmosfljmk.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlcHRzd2t2eXdicW1vc2Zsam1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyOTcyMDYsImV4cCI6MjA5Njg3MzIwNn0.SokWiuK4WwaiLBlurayH4dwUAA4eFuxYFQayEwzyqTo';
+
+  const { createClient } = supabase;
+  const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+  let usuarioAtual = null;
+
+  async function loginGoogle() {
+    await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: 'https://hithaus-periodizacao.netlify.app/relatorios.html' }
+    });
+  }
+
+  async function logout() {
+    await sb.auth.signOut();
+    location.reload();
+  }
+
+  function renderTelaLogin() {
+    document.body.innerHTML = `
+      <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #0A0A0A; color: #fff; font-family: 'DM Sans', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .login-box { background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 48px 40px; text-align: center; max-width: 400px; width: 90%; }
+        .login-logo { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 32px; }
+        .login-logo svg { width: 40px; height: 40px; }
+        .login-titulo { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; }
+        .login-titulo span { color: #00FF7F; }
+        .login-sub { font-size: 13px; color: #888; margin-bottom: 32px; line-height: 1.6; }
+        .btn-google { display: flex; align-items: center; justify-content: center; gap: 12px; background: #fff; color: #111; border: none; border-radius: 4px; padding: 14px 24px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; transition: all 0.15s; }
+        .btn-google:hover { background: #f0f0f0; }
+        .btn-google svg { width: 20px; height: 20px; }
+        .login-aviso { font-size: 11px; color: #555; margin-top: 20px; }
+      </style>
+      <div class="login-box">
+        <div class="login-logo">
+          <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="50" cy="50" rx="48" ry="48" fill="white"/>
+            <ellipse cx="50" cy="50" rx="34" ry="22" stroke="#000" stroke-width="9" fill="none"/>
+            <line x1="16" y1="50" x2="84" y2="50" stroke="#000" stroke-width="9"/>
+            <rect x="44" y="28" width="12" height="10" fill="white"/>
+            <rect x="44" y="62" width="12" height="10" fill="white"/>
+          </svg>
+          <span class="login-titulo">HIT<span>HAUS</span></span>
+        </div>
+        <p class="login-sub">Área restrita à gestão e mentores.<br>Faça login com sua conta Google para continuar.</p>
+        <button class="btn-google" onclick="loginGoogle()">
+          <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          Entrar com Google
+        </button>
+        <p class="login-aviso">Somente gestores e mentores têm acesso aos relatórios.</p>
+      </div>
+    `;
+  }
+
+  function renderTelaAcessoNegado(email) {
+    document.body.innerHTML = `
+      <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #0A0A0A; color: #fff; font-family: 'DM Sans', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .box { background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 48px 40px; text-align: center; max-width: 400px; width: 90%; }
+        h2 { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; margin-bottom: 12px; color: #FF4444; }
+        p { font-size: 13px; color: #888; line-height: 1.6; margin-bottom: 8px; }
+        .email-badge { font-size: 13px; color: #fff; background: #1a1a1a; padding: 8px 16px; border-radius: 4px; margin: 12px 0; display: inline-block; }
+        .btn { margin-top: 20px; display: inline-block; background: transparent; border: 1px solid #333; color: #888; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; }
+        .btn:hover { border-color: #FF4444; color: #FF4444; }
+      </style>
+      <div class="box">
+        <div style="font-size:40px;margin-bottom:16px">🔒</div>
+        <h2>Acesso Negado</h2>
+        <p>O e-mail abaixo não tem permissão para acessar os relatórios.</p>
+        <div class="email-badge">${email}</div>
+        <p>Entre em contato com a gestão da Hit Haus.</p>
+        <button class="btn" onclick="logout()">Sair e tentar outro e-mail</button>
+      </div>
+    `;
+  }
+
+  async function verificarAuth() {
+    const { data: { session } } = await sb.auth.getSession();
+
+    if (!session) {
+      renderTelaLogin();
+      return;
+    }
+
+    const email = session.user.email;
+    const { data: usuario } = await sb.from('professores_autorizados')
+      .select('*')
+      .eq('email', email)
+      .eq('ativo', true)
+      .single();
+
+    if (!usuario || usuario.papel === 'professor') {
+      renderTelaAcessoNegado(email);
+      return;
+    }
+
+    usuarioAtual = usuario;
+
+    // Trava filtro de modalidade para mentores
+    if (usuario.papel === 'mentor' && usuario.modalidade_mentor) {
+      const sel = document.getElementById('f-modalidade');
+      if (sel) {
+        sel.value = usuario.modalidade_mentor;
+        sel.disabled = true;
+      }
+    }
+
+    // Atualiza badge do header
+    const badge = document.querySelector('.header-badge');
+    if (badge) {
+      const papel = usuario.papel === 'gestor' ? 'Gestor' : `Mentor · ${usuario.modalidade_mentor}`;
+      badge.innerHTML = `${usuario.nome} &nbsp;·&nbsp; ${papel} &nbsp;·&nbsp; <span onclick="logout()" style="cursor:pointer;opacity:0.7">Sair</span>`;
+    }
+
+    carregarTudo();
+  }
+
+  let todosExercicios = [];
+  let todosTreinos = [];
+  let tabAtual = 'exercicios';
+
+  async function get(tabela, filtro) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${tabela}?${filtro}`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    return res.json();
+  }
+
+  async function carregarTudo() {
+    try {
+      const [treinos, blocos, exercicios] = await Promise.all([
+        get('treinos', 'select=*&order=data_aula.desc,criado_em.desc'),
+        get('blocos', 'select=id,treino_id,numero_bloco,numero_series,descanso_entre_series'),
+        get('exercicios', 'select=id,bloco_id,nome,equipamento,repeticoes,cadencia,grupo_movimento,link_youtube,observacoes_seguranca,adaptacao_possivel,ordem&order=nome')
+      ]);
+
+      // Monta índices
+      const treinoMap = {};
+      treinos.forEach(t => treinoMap[t.id] = t);
+
+      const blocoMap = {};
+      blocos.forEach(b => blocoMap[b.id] = b);
+
+      // Conta blocos e exercícios por treino
+      const blocosPorTreino = {};
+      blocos.forEach(b => {
+        blocosPorTreino[b.treino_id] = (blocosPorTreino[b.treino_id] || 0) + 1;
+      });
+
+      const exPorTreino = {};
+      exercicios.forEach(ex => {
+        const bloco = blocoMap[ex.bloco_id];
+        if (bloco) exPorTreino[bloco.treino_id] = (exPorTreino[bloco.treino_id] || 0) + 1;
+      });
+
+      // Enriquece exercícios com dados do treino
+      todosExercicios = exercicios.map(ex => {
+        const bloco = blocoMap[ex.bloco_id] || {};
+        const treino = treinoMap[bloco.treino_id] || {};
+        return { ...ex, treino };
+      }).filter(ex => ex.treino.id);
+
+      // Enriquece treinos
+      todosTreinos = treinos.map(t => ({
+        ...t,
+        num_blocos: blocosPorTreino[t.id] || 0,
+        num_exercicios: exPorTreino[t.id] || 0
+      }));
+
+      atualizarMetricas();
+      aplicarFiltros();
+
+    } catch(e) {
+      document.getElementById('resultados-info').textContent = 'Erro ao carregar dados.';
+    }
+  }
+
+  function atualizarMetricas() {
+    const totalTreinos = todosTreinos.length;
+    const totalExercicios = todosExercicios.length;
+    const modalidades = new Set(todosTreinos.map(t => t.modalidade)).size;
+    const nomesUnicos = new Set(todosExercicios.map(e => e.nome.toLowerCase().trim())).size;
+
+    document.getElementById('metricas-grid').innerHTML = `
+      <div class="metrica-card">
+        <div class="metrica-label">Total de Treinos</div>
+        <div class="metrica-valor">${totalTreinos}</div>
+        <div class="metrica-sub">cadastrados no sistema</div>
+      </div>
+      <div class="metrica-card">
+        <div class="metrica-label">Total de Exercícios</div>
+        <div class="metrica-valor">${totalExercicios}</div>
+        <div class="metrica-sub">em todos os treinos</div>
+      </div>
+      <div class="metrica-card">
+        <div class="metrica-label">Modalidades Ativas</div>
+        <div class="metrica-valor">${modalidades}</div>
+        <div class="metrica-sub">com treinos cadastrados</div>
+      </div>
+      <div class="metrica-card">
+        <div class="metrica-label">Exercícios Únicos</div>
+        <div class="metrica-valor">${nomesUnicos}</div>
+        <div class="metrica-sub">na biblioteca da Hit Haus</div>
+      </div>
+    `;
+  }
+
+  function aplicarFiltros() {
+    const fModal = document.getElementById('f-modalidade').value;
+    const fGrupo = document.getElementById('f-grupo').value;
+    const fSemana = document.getElementById('f-semana').value;
+    const fFoco = document.getElementById('f-foco').value.toLowerCase().trim();
+    const fExercicio = document.getElementById('f-exercicio').value.toLowerCase().trim();
+    const fDe = document.getElementById('f-data-de').value;
+    const fAte = document.getElementById('f-data-ate').value;
+
+    const exFiltrados = todosExercicios.filter(ex => {
+      const t = ex.treino;
+      if (fModal && t.modalidade !== fModal) return false;
+      if (fGrupo && ex.grupo_movimento !== fGrupo) return false;
+      if (fSemana && String(t.semana_mes) !== fSemana) return false;
+      if (fFoco && !(t.foco_muscular || '').toLowerCase().includes(fFoco)) return false;
+      if (fExercicio && !ex.nome.toLowerCase().includes(fExercicio)) return false;
+      if (fDe && t.data_aula && t.data_aula < fDe) return false;
+      if (fAte && t.data_aula && t.data_aula > fAte) return false;
+      return true;
+    });
+
+    const trFiltrados = todosTreinos.filter(t => {
+      if (fModal && t.modalidade !== fModal) return false;
+      if (fSemana && String(t.semana_mes) !== fSemana) return false;
+      if (fFoco && !(t.foco_muscular || '').toLowerCase().includes(fFoco)) return false;
+      if (fDe && t.data_aula && t.data_aula < fDe) return false;
+      if (fAte && t.data_aula && t.data_aula > fAte) return false;
+      return true;
+    });
+
+    renderExercicios(exFiltrados);
+    renderTreinos(trFiltrados);
+    renderGraficos(exFiltrados, trFiltrados);
+
+    const total = tabAtual === 'treinos' ? trFiltrados.length : exFiltrados.length;
+    const label = tabAtual === 'treinos' ? 'treino(s)' : 'exercício(s)';
+    document.getElementById('resultados-info').innerHTML =
+      `<strong>${total}</strong> ${label} encontrado(s)`;
+  }
+
+  function renderExercicios(lista) {
+    const tbody = document.getElementById('tbody-exercicios');
+    if (!lista.length) {
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhum exercício encontrado com os filtros selecionados.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = lista.map(ex => {
+      const t = ex.treino;
+      const vidId = youtubeId(ex.link_youtube);
+      return `<tr>
+        <td style="font-weight:600;max-width:200px">${ex.nome}</td>
+        <td>${ex.grupo_movimento ? `<span class="badge badge-grupo">${ex.grupo_movimento}</span>` : '<span style="color:#444">—</span>'}</td>
+        <td>${ex.equipamento || '<span style="color:#444">—</span>'}</td>
+        <td>${ex.repeticoes || '<span style="color:#444">—</span>'}</td>
+        <td>${ex.cadencia || '<span style="color:#444">—</span>'}</td>
+        <td><span class="badge badge-modalidade">${t.modalidade || '—'}</span></td>
+        <td style="white-space:nowrap">${t.dia_semana || '—'}</td>
+        <td><span class="badge badge-semana">Sem. ${t.semana_mes || '—'}</span></td>
+        <td style="max-width:150px">${t.foco_muscular || '—'}</td>
+        <td>${vidId ? `<a class="link-yt" href="https://youtube.com/watch?v=${vidId}" target="_blank">▶ Ver</a>` : '<span style="color:#444">—</span>'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderTreinos(lista) {
+    const tbody = document.getElementById('tbody-treinos');
+    if (!lista.length) {
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhum treino encontrado.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = lista.map(t => {
+      const data = t.criado_em ? new Date(t.criado_em).toLocaleDateString('pt-BR') : '—';
+      const dataAula = t.data_aula ? new Date(t.data_aula + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+      return `<tr>
+        <td><span class="badge badge-modalidade">${t.modalidade}</span></td>
+        <td style="white-space:nowrap">${t.dia_semana}</td>
+        <td><span class="badge badge-semana">Sem. ${t.semana_mes}</span></td>
+        <td style="font-weight:600">${t.foco_muscular}</td>
+        <td style="max-width:160px;font-size:12px">${t.materials || '<span style="color:#444">—</span>'}</td>
+        <td>${t.mentor_responsavel}</td>
+        <td style="text-align:center">${t.num_blocos}</td>
+        <td style="text-align:center">${t.num_exercicios}</td>
+        <td style="font-weight:600">${dataAula}</td>
+        <td style="font-size:12px;color:var(--text-muted)">${data}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderGraficos(exercicios, treinos) {
+    // Grupos
+    const grupos = {};
+    exercicios.forEach(ex => {
+      const g = ex.grupo_movimento || 'Sem grupo';
+      grupos[g] = (grupos[g] || 0) + 1;
+    });
+    renderBarra('grafico-grupos', grupos);
+
+    // Modalidades
+    const mods = {};
+    exercicios.forEach(ex => {
+      const m = ex.treino.modalidade || 'Desconhecida';
+      mods[m] = (mods[m] || 0) + 1;
+    });
+    renderBarra('grafico-modalidades', mods);
+
+    // Semanas
+    const semanas = { 'Semana 1': 0, 'Semana 2': 0, 'Semana 3': 0, 'Semana 4': 0 };
+    treinos.forEach(t => {
+      const s = `Semana ${t.semana_mes}`;
+      if (semanas[s] !== undefined) semanas[s]++;
+    });
+    renderBarra('grafico-semanas', semanas);
+  }
+
+  function renderBarra(containerId, dados) {
+    const container = document.getElementById(containerId);
+    const sorted = Object.entries(dados).sort((a, b) => b[1] - a[1]);
+    const max = sorted[0]?.[1] || 1;
+
+    if (!sorted.length || sorted.every(s => s[1] === 0)) {
+      container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:20px 0">Sem dados suficientes.</div>';
+      return;
+    }
+
+    container.innerHTML = sorted.map(([label, count]) => `
+      <div class="barra-item">
+        <div class="barra-label">${label}</div>
+        <div class="barra-track">
+          <div class="barra-fill" style="width:${Math.round(count/max*100)}%"></div>
+        </div>
+        <div class="barra-count">${count}</div>
+      </div>
+    `).join('');
+  }
+
+  function youtubeId(url) {
+    if (!url) return null;
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+    return m ? m[1] : null;
+  }
+
+  function mudarTab(tab, btn) {
+    tabAtual = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('ativo'));
+    btn.classList.add('ativo');
+    document.getElementById('tab-exercicios').style.display = tab === 'exercicios' ? 'block' : 'none';
+    document.getElementById('tab-treinos').style.display = tab === 'treinos' ? 'block' : 'none';
+    document.getElementById('tab-graficos').style.display = tab === 'graficos' ? 'block' : 'none';
+    document.getElementById('tab-logs').style.display = tab === 'logs' ? 'block' : 'none';
+    if (tab === 'logs') carregarLogs();
+    else aplicarFiltros();
+  }
+
+  async function carregarLogs() {
+    const tbody = document.getElementById('tbody-logs');
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Carregando...</td></tr>';
+
+    try {
+      let filtro = 'order=acessado_em.desc&limit=200';
+
+      // Mentor vê apenas logs da sua modalidade
+      if (usuarioAtual && usuarioAtual.papel === 'mentor' && usuarioAtual.modalidade_mentor) {
+        filtro += `&treino_modalidade=eq.${encodeURIComponent(usuarioAtual.modalidade_mentor)}`;
+      }
+
+      // Aplica filtros ativos
+      const fModal = document.getElementById('f-modalidade').value;
+      const fSemana = document.getElementById('f-semana').value;
+      if (fModal && (!usuarioAtual || usuarioAtual.papel === 'gestor')) {
+        filtro += `&treino_modalidade=eq.${encodeURIComponent(fModal)}`;
+      }
+      if (fSemana) filtro += `&treino_semana=eq.${fSemana}`;
+
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/logs_acesso?${filtro}`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      const logs = await res.json();
+
+      document.getElementById('resultados-info').innerHTML = `<strong>${logs.length}</strong> acesso(s) registrado(s)`;
+
+      if (!logs.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhum acesso registrado ainda.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = logs.map(log => {
+        const data = new Date(log.acessado_em);
+        const dataFormatada = data.toLocaleDateString('pt-BR');
+        const horaFormatada = data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        return `<tr>
+          <td style="font-weight:600">${log.professor_nome}</td>
+          <td style="font-size:12px;color:var(--text-muted)">${log.professor_email}</td>
+          <td><span class="badge badge-modalidade">${log.treino_modalidade}</span></td>
+          <td style="white-space:nowrap">${log.treino_dia}</td>
+          <td><span class="badge badge-semana">Sem. ${log.treino_semana}</span></td>
+          <td>${log.treino_foco}</td>
+          <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${dataFormatada} às ${horaFormatada}</td>
+        </tr>`;
+      }).join('');
+
+    } catch(e) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)">Erro ao carregar logs: ${e.message}</td></tr>`;
+    }
+  }
+
+  function limparFiltros() {
+    document.getElementById('f-modalidade').value = '';
+    document.getElementById('f-grupo').value = '';
+    document.getElementById('f-semana').value = '';
+    document.getElementById('f-foco').value = '';
+    document.getElementById('f-exercicio').value = '';
+    document.getElementById('f-data-de').value = '';
+    document.getElementById('f-data-ate').value = '';
+    aplicarFiltros();
+  }
+
+  function limparPeriodo() {
+    document.getElementById('f-data-de').value = '';
+    document.getElementById('f-data-ate').value = '';
+    aplicarFiltros();
+  }
+
+  function exportarExcel() {
+    if (tabAtual === 'logs') {
+      exportarLogsExcel();
+    } else if (tabAtual === 'treinos') {
+      exportarTreinosExcel();
+    } else {
+      exportarExerciciosExcel();
+    }
+  }
+
+  function exportarExerciciosExcel() {
+    const fModal = document.getElementById('f-modalidade').value;
+    const fGrupo = document.getElementById('f-grupo').value;
+    const fSemana = document.getElementById('f-semana').value;
+    const fFoco = document.getElementById('f-foco').value.toLowerCase().trim();
+    const fExercicio = document.getElementById('f-exercicio').value.toLowerCase().trim();
+    const fDe = document.getElementById('f-data-de').value;
+    const fAte = document.getElementById('f-data-ate').value;
+
+    const exFiltrados = todosExercicios.filter(ex => {
+      const t = ex.treino;
+      if (fModal && t.modalidade !== fModal) return false;
+      if (fGrupo && ex.grupo_movimento !== fGrupo) return false;
+      if (fSemana && String(t.semana_mes) !== fSemana) return false;
+      if (fFoco && !(t.foco_muscular || '').toLowerCase().includes(fFoco)) return false;
+      if (fExercicio && !ex.nome.toLowerCase().includes(fExercicio)) return false;
+      if (fDe && t.data_aula && t.data_aula < fDe) return false;
+      if (fAte && t.data_aula && t.data_aula > fAte) return false;
+      return true;
+    });
+
+    const dados = exFiltrados.map(ex => ({
+      'Exercício': ex.nome,
+      'Grupo de Movimento': ex.grupo_movimento || '',
+      'Material': ex.equipamento || '',
+      'Repetições': ex.repeticoes || '',
+      'Cadência': ex.cadencia || '',
+      'Observações de Segurança': ex.observacoes_seguranca || '',
+      'Adaptação Possível': ex.adaptacao_possivel || '',
+      'Modalidade': ex.treino.modalidade || '',
+      'Dia da Semana': ex.treino.dia_semana || '',
+      'Semana do Mês': ex.treino.semana_mes || '',
+      'Data da Aula': ex.treino.data_aula ? new Date(ex.treino.data_aula + 'T12:00:00').toLocaleDateString('pt-BR') : '',
+      'Foco Muscular': ex.treino.foco_muscular || '',
+      'Mentor': ex.treino.mentor_responsavel || '',
+      'Link YouTube': ex.link_youtube || '',
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dados);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Exercícios');
+    const data = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+    XLSX.writeFile(wb, `HitHaus_Exercicios_${data}.xlsx`);
+  }
+
+  function exportarTreinosExcel() {
+    const fModal = document.getElementById('f-modalidade').value;
+    const fSemana = document.getElementById('f-semana').value;
+    const fFoco = document.getElementById('f-foco').value.toLowerCase().trim();
+    const fDe = document.getElementById('f-data-de').value;
+    const fAte = document.getElementById('f-data-ate').value;
+
+    const trFiltrados = todosTreinos.filter(t => {
+      if (fModal && t.modalidade !== fModal) return false;
+      if (fSemana && String(t.semana_mes) !== fSemana) return false;
+      if (fFoco && !(t.foco_muscular || '').toLowerCase().includes(fFoco)) return false;
+      if (fDe && t.data_aula && t.data_aula < fDe) return false;
+      if (fAte && t.data_aula && t.data_aula > fAte) return false;
+      return true;
+    });
+
+    const dados = trFiltrados.map(t => ({
+      'Modalidade': t.modalidade || '',
+      'Dia da Semana': t.dia_semana || '',
+      'Semana do Mês': t.semana_mes || '',
+      'Data da Aula': t.data_aula ? new Date(t.data_aula + 'T12:00:00').toLocaleDateString('pt-BR') : '',
+      'Foco Muscular': t.foco_muscular || '',
+      'Materials': t.equipamentos || '',
+      'Mentor': t.mentor_responsavel || '',
+      'Blocos': t.num_blocos || 0,
+      'Exercícios': t.num_exercicios || 0,
+      'Cadastrado em': t.criado_em ? new Date(t.criado_em).toLocaleDateString('pt-BR') : '',
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dados);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Treinos');
+    const data = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+    XLSX.writeFile(wb, `HitHaus_Treinos_${data}.xlsx`);
+  }
+
+  async function exportarLogsExcel() {
+    try {
+      let filtro = 'order=acessado_em.desc&limit=1000';
+      if (usuarioAtual && usuarioAtual.papel === 'mentor' && usuarioAtual.modalidade_mentor) {
+        filtro += `&treino_modalidade=eq.${encodeURIComponent(usuarioAtual.modalidade_mentor)}`;
+      }
+      const fModal = document.getElementById('f-modalidade').value;
+      const fSemana = document.getElementById('f-semana').value;
+      const fDe = document.getElementById('f-data-de').value;
+      const fAte = document.getElementById('f-data-ate').value;
+      if (fModal && (!usuarioAtual || usuarioAtual.papel === 'gestor')) {
+        filtro += `&treino_modalidade=eq.${encodeURIComponent(fModal)}`;
+      }
+      if (fSemana) filtro += `&treino_semana=eq.${fSemana}`;
+
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/logs_acesso?${filtro}`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      let logs = await res.json();
+
+      // Filtro de período por data de acesso
+      if (fDe) logs = logs.filter(l => l.acessado_em.slice(0,10) >= fDe);
+      if (fAte) logs = logs.filter(l => l.acessado_em.slice(0,10) <= fAte);
+
+      const dados = logs.map(log => ({
+        'Professor': log.professor_nome,
+        'E-mail': log.professor_email,
+        'Modalidade': log.treino_modalidade,
+        'Dia da Semana': log.treino_dia,
+        'Semana do Mês': log.treino_semana,
+        'Foco Muscular': log.treino_foco,
+        'Data do Acesso': new Date(log.acessado_em).toLocaleDateString('pt-BR'),
+        'Hora do Acesso': new Date(log.acessado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(dados);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Logs de Acesso');
+      const data = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+      XLSX.writeFile(wb, `HitHaus_Logs_${data}.xlsx`);
+
+    } catch(e) {
+      alert('Erro ao exportar logs: ' + e.message);
+    }
+  }
+
+  function exportarPDF() {
+    window.print();
+  }
+
+  window.addEventListener('load', verificarAuth);
+</script>
+</body>
+</html>

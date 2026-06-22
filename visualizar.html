@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hit Haus — Treinos da Semana</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green: #00FF7F;
+    --black: #000000;
+    --bg: #0A0A0A;
+    --card: #111111;
+    --card2: #181818;
+    --border: #2a2a2a;
+    --border-green: #00FF7F44;
+    --text: #FFFFFF;
+    --text-muted: #888888;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--black);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header-logo svg { width: 32px; height: 32px; }
+
+  .header-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+
+  .header-title span { color: var(--green); }
+
+  .header-badge {
+    background: var(--green);
+    color: var(--black);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  main { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* PÁGINA ÍNDICE */
+  #page-index { display: block; }
+  #page-treino { display: none; }
+
+  .page-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+    line-height: 1;
+  }
+
+  .page-title span { color: var(--green); }
+
+  .page-subtitle {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  .semana-badge {
+    display: inline-block;
+    background: var(--border);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  /* SELETOR DE SEMANA */
+  .semana-selector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+
+  .semana-selector label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+  }
+
+  .semana-selector select {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 8px 32px 8px 14px;
+    outline: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2300FF7F' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    transition: border-color 0.15s;
+  }
+
+  .semana-selector select:focus { border-color: var(--green); }
+  .semana-selector select option { background: #1a1a1a; }
+
+  /* LISTA DE DIAS */
+  .dias-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .dia-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    color: var(--text);
+  }
+
+  .dia-card:hover {
+    border-color: var(--green);
+    background: #141414;
+    transform: translateX(4px);
+  }
+
+  .dia-card-left { display: flex; align-items: center; gap: 20px; }
+
+  .dia-pill {
+    background: var(--black);
+    border: 1px solid var(--border);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px;
+    letter-spacing: 1px;
+    padding: 6px 14px;
+    border-radius: 2px;
+    min-width: 80px;
+    text-align: center;
+    color: var(--text-muted);
+  }
+
+  .dia-card:hover .dia-pill {
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .dia-info { display: flex; flex-direction: column; gap: 4px; }
+
+  .dia-foco {
+    font-weight: 600;
+    font-size: 16px;
+  }
+
+  .dia-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 12px;
+  }
+
+  .dia-meta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .dia-arrow {
+    color: var(--text-muted);
+    font-size: 20px;
+    transition: color 0.2s, transform 0.2s;
+  }
+
+  .dia-card:hover .dia-arrow {
+    color: var(--green);
+    transform: translateX(4px);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--text-muted);
+  }
+
+  .empty-state h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+
+  .loading-state {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  /* ======================== */
+  /* PÁGINA TREINO COMPLETO   */
+  /* ======================== */
+
+  .btn-voltar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-bottom: 32px;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+
+  .btn-voltar:hover { border-color: var(--green); color: var(--green); }
+
+  /* CABEÇALHO DO TREINO */
+  .treino-hero {
+    background: var(--black);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 28px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .treino-hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--green);
+  }
+
+  .treino-modalidade {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--green);
+    margin-bottom: 8px;
+  }
+
+  .treino-titulo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 2px;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+
+  .treino-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .tag {
+    background: var(--card);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 2px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .tag.green { border-color: var(--border-green); color: var(--green); }
+
+  .treino-materials {
+    font-size: 13px;
+    color: var(--text-muted);
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .treino-materials strong { color: var(--text); }
+
+  /* SEÇÕES DO TREINO */
+  .treino-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  .treino-section-header {
+    background: var(--black);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-num {
+    background: var(--green);
+    color: var(--black);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 15px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .section-num.outline {
+    background: transparent;
+    border: 1px solid var(--green);
+    color: var(--green);
+  }
+
+  .section-title-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+  }
+
+  .section-meta {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 16px;
+  }
+
+  .treino-section-body { padding: 24px; }
+
+  /* AQUECIMENTO */
+  .aquecimento-desc {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-line;
+  }
+
+  /* EXERCÍCIO */
+  .exercicio-item {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 20px;
+    margin-bottom: 12px;
+  }
+
+  .exercicio-item:last-child { margin-bottom: 0; }
+
+  .exercicio-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .exercicio-num-badge {
+    background: var(--border);
+    color: var(--text-muted);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    padding: 3px 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .exercicio-nome {
+    font-weight: 700;
+    font-size: 16px;
+    flex: 1;
+    line-height: 1.3;
+  }
+
+  .exercicio-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .chip {
+    background: var(--black);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .chip strong { color: var(--text); font-weight: 600; }
+
+  .exercicio-obs {
+    background: #0a1a0e;
+    border: 1px solid #1a3a22;
+    border-radius: 3px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #4dff99;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    line-height: 1.5;
+  }
+
+  .exercicio-adapt {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    line-height: 1.5;
+  }
+
+  /* VÍDEO */
+  .video-wrapper {
+    margin-top: 14px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--black);
+    border: 1px solid var(--border);
+    aspect-ratio: 16/9;
+  }
+
+  .video-wrapper iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+
+  /* RODAPÉ DO TREINO */
+  .rodape-text {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-line;
+  }
+
+  .mentor-line {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 600px) {
+    header { padding: 0 16px; }
+    main { padding: 24px 16px 60px; }
+    .page-title { font-size: 32px; }
+    .treino-titulo { font-size: 28px; }
+    .section-meta { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-logo">
+    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="50" cy="50" rx="48" ry="48" fill="white"/>
+      <ellipse cx="50" cy="50" rx="34" ry="22" stroke="#000" stroke-width="9" fill="none"/>
+      <line x1="16" y1="50" x2="84" y2="50" stroke="#000" stroke-width="9"/>
+      <rect x="44" y="28" width="12" height="10" fill="white"/>
+      <rect x="44" y="62" width="12" height="10" fill="white"/>
+    </svg>
+    <span class="header-title">HIT<span>HAUS</span></span>
+  </div>
+  <span class="header-badge" id="header-badge">Treinos</span>
+</header>
+
+<main>
+
+  <!-- PÁGINA ÍNDICE -->
+  <div id="page-index">
+    <h1 class="page-title" id="index-title">TREINOS DA <span>SEMANA</span></h1>
+    <p class="page-subtitle" id="index-subtitle">Selecione o dia para ver o treino completo.</p>
+
+    <div class="semana-selector">
+      <label>Semana do mês:</label>
+      <select id="select-semana" onchange="carregarTreinos()">
+        <option value="1">Semana 1</option>
+        <option value="2">Semana 2</option>
+        <option value="3">Semana 3</option>
+        <option value="4">Semana 4</option>
+      </select>
+    </div>
+
+    <div id="dias-list" class="dias-list">
+      <div class="loading-state">Carregando treinos...</div>
+    </div>
+  </div>
+
+  <!-- PÁGINA TREINO COMPLETO -->
+  <div id="page-treino">
+    <button class="btn-voltar" onclick="voltarIndice()">← Voltar</button>
+    <div id="treino-content"></div>
+  </div>
+
+</main>
+
+<script>
+  const SUPABASE_URL = 'https://weptswkvywbqmosfljmk.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlcHRzd2t2eXdicW1vc2Zsam1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyOTcyMDYsImV4cCI6MjA5Njg3MzIwNn0.SokWiuK4WwaiLBlurayH4dwUAA4eFuxYFQayEwzyqTo';
+
+  const { createClient } = supabase;
+  const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+  let usuarioAtual = null;
+
+  async function loginGoogle() {
+    const redirectTo = 'https://hithaus-periodizacao.netlify.app/index.html';
+    localStorage.setItem('hh_redirect', 'visualizar.html' + window.location.search);
+    await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
+  }
+
+  async function logout() {
+    await sb.auth.signOut();
+    location.reload();
+  }
+
+  function renderTelaLogin() {
+    document.body.innerHTML = `
+      <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #0A0A0A; color: #fff; font-family: 'DM Sans', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .login-box { background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 48px 40px; text-align: center; max-width: 400px; width: 90%; }
+        .login-logo { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 32px; }
+        .login-logo svg { width: 40px; height: 40px; }
+        .login-titulo { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; }
+        .login-titulo span { color: #00FF7F; }
+        .login-sub { font-size: 13px; color: #888; margin-bottom: 32px; line-height: 1.6; }
+        .btn-google { display: flex; align-items: center; justify-content: center; gap: 12px; background: #fff; color: #111; border: none; border-radius: 4px; padding: 14px 24px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; transition: all 0.15s; }
+        .btn-google:hover { background: #f0f0f0; }
+        .btn-google svg { width: 20px; height: 20px; }
+        .login-aviso { font-size: 11px; color: #555; margin-top: 20px; }
+      </style>
+      <div class="login-box">
+        <div class="login-logo">
+          <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="50" cy="50" rx="48" ry="48" fill="white"/>
+            <ellipse cx="50" cy="50" rx="34" ry="22" stroke="#000" stroke-width="9" fill="none"/>
+            <line x1="16" y1="50" x2="84" y2="50" stroke="#000" stroke-width="9"/>
+            <rect x="44" y="28" width="12" height="10" fill="white"/>
+            <rect x="44" y="62" width="12" height="10" fill="white"/>
+          </svg>
+          <span class="login-titulo">HIT<span>HAUS</span></span>
+        </div>
+        <p class="login-sub">Faça login com sua conta Google para visualizar os treinos da semana.</p>
+        <button class="btn-google" onclick="loginGoogle()">
+          <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          Entrar com Google
+        </button>
+        <p class="login-aviso">Somente professores cadastrados pela Hit Haus têm acesso.</p>
+      </div>
+    `;
+  }
+
+  function renderTelaAcessoNegado(email) {
+    document.body.innerHTML = `
+      <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #0A0A0A; color: #fff; font-family: 'DM Sans', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .box { background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 48px 40px; text-align: center; max-width: 400px; width: 90%; }
+        h2 { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 2px; margin-bottom: 12px; color: #FF4444; }
+        p { font-size: 13px; color: #888; line-height: 1.6; margin-bottom: 8px; }
+        .email-badge { font-size: 13px; color: #fff; background: #1a1a1a; padding: 8px 16px; border-radius: 4px; margin: 12px 0; display: inline-block; }
+        .btn { margin-top: 20px; display: inline-block; background: transparent; border: 1px solid #333; color: #888; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; }
+        .btn:hover { border-color: #FF4444; color: #FF4444; }
+      </style>
+      <div class="box">
+        <div style="font-size:40px;margin-bottom:16px">🔒</div>
+        <h2>Acesso Negado</h2>
+        <p>O e-mail abaixo não está autorizado a visualizar os treinos.</p>
+        <div class="email-badge">${email}</div>
+        <p>Entre em contato com a gestão da Hit Haus.</p>
+        <button class="btn" onclick="logout()">Sair e tentar outro e-mail</button>
+      </div>
+    `;
+  }
+
+  async function registrarLog(treino) {
+    if (!usuarioAtual) return;
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/logs_acesso`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        },
+        body: JSON.stringify({
+          professor_email: usuarioAtual.email,
+          professor_nome: usuarioAtual.nome,
+          treino_id: treino.id,
+          treino_modalidade: treino.modalidade,
+          treino_dia: treino.dia_semana,
+          treino_foco: treino.foco_muscular,
+          treino_semana: treino.semana_mes
+        })
+      });
+    } catch(e) {
+      console.error('Erro ao registrar log:', e);
+    }
+  }
+
+  async function verificarAuth() {
+    const { data: { session } } = await sb.auth.getSession();
+
+    if (!session) {
+      renderTelaLogin();
+      return;
+    }
+
+    const email = session.user.email;
+    const { data: usuario } = await sb.from('professores_autorizados')
+      .select('*')
+      .eq('email', email)
+      .eq('ativo', true)
+      .single();
+
+    if (!usuario) {
+      renderTelaAcessoNegado(email);
+      return;
+    }
+
+    usuarioAtual = usuario;
+
+    // Atualiza badge do header
+    const badge = document.querySelector('.header-badge');
+    if (badge) {
+      badge.innerHTML = `${usuario.nome} &nbsp;·&nbsp; <span onclick="logout()" style="cursor:pointer;opacity:0.7">Sair</span>`;
+    }
+
+    // Inicializa a página
+    inicializar();
+  }
+
+  const ORDEM_DIAS = ['Segunda e Quinta','Terça e Sexta','Quarta e Fim de Semana'];
+
+  // Pega modalidade da URL
+  const params = new URLSearchParams(window.location.search);
+  const modalidade = params.get('modalidade') || 'Todas';
+
+  // Detecta semana atual do mês
+  function semanaAtualDoMes() {
+    const hoje = new Date();
+    return Math.min(4, Math.ceil(hoje.getDate() / 7));
+  }
+
+  async function get(tabela, filtros) {
+    let url = `${SUPABASE_URL}/rest/v1/${tabela}?${filtros}`;
+    const res = await fetch(url, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      }
+    });
+    if (!res.ok) throw new Error('Erro ao buscar dados.');
+    return res.json();
+  }
+
+  function youtubeId(url) {
+    if (!url) return null;
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/
+    ];
+    for (const p of patterns) {
+      const m = url.match(p);
+      if (m) return m[1];
+    }
+    return null;
+  }
+
+  function inicializar() {
+    // Atualiza header e título com a modalidade
+    document.getElementById('header-badge').textContent = modalidade;
+    document.getElementById('index-title').innerHTML =
+      modalidade !== 'Todas'
+        ? `<span>${modalidade.toUpperCase()}</span> — TREINOS DA SEMANA`
+        : 'TREINOS DA <span>SEMANA</span>';
+    document.getElementById('index-subtitle').textContent =
+      'Selecione o dia para ver o treino completo.';
+
+    // Define semana atual no select
+    const semana = semanaAtualDoMes();
+    document.getElementById('select-semana').value = semana;
+
+    carregarTreinos();
+  };
+
+  async function carregarTreinos() {
+    const semana = document.getElementById('select-semana').value;
+    const lista = document.getElementById('dias-list');
+    lista.innerHTML = '<div class="loading-state">Carregando treinos...</div>';
+
+    try {
+      let filtro = `semana_mes=eq.${semana}&order=dia_semana`;
+      if (modalidade !== 'Todas') {
+        filtro += `&modalidade=eq.${encodeURIComponent(modalidade)}`;
+      }
+
+      const treinos = await get('treinos', filtro);
+
+      if (!treinos.length) {
+        lista.innerHTML = `
+          <div class="empty-state">
+            <h3>Nenhum treino cadastrado</h3>
+            <p>Ainda não há treinos cadastrados para a Semana ${semana}.</p>
+          </div>`;
+        return;
+      }
+
+      // Ordena pelos dias da semana
+      treinos.sort((a, b) =>
+        ORDEM_DIAS.indexOf(a.dia_semana) - ORDEM_DIAS.indexOf(b.dia_semana)
+      );
+
+      lista.innerHTML = treinos.map(t => `
+        <div class="dia-card" onclick="abrirTreino('${t.id}')">
+          <div class="dia-card-left">
+            <div class="dia-pill">${t.dia_semana.toUpperCase()}</div>
+            <div class="dia-info">
+              <div class="dia-foco">${t.foco_muscular}</div>
+              <div class="dia-meta">
+                  ${t.tempo_total_minutos ? `<span>⏱ ${t.tempo_total_minutos} min</span>` : ''}
+                ${t.mentor_responsavel ? `<span>👤 ${t.mentor_responsavel}</span>` : ''}
+              </div>
+            </div>
+          </div>
+          <span class="dia-arrow">→</span>
+        </div>
+      `).join('');
+
+    } catch (err) {
+      lista.innerHTML = `<div class="empty-state"><h3>Erro ao carregar</h3><p>${err.message}</p></div>`;
+    }
+  }
+
+  async function abrirTreino(treinoId) {
+    document.getElementById('page-index').style.display = 'none';
+    document.getElementById('page-treino').style.display = 'block';
+    document.getElementById('treino-content').innerHTML =
+      '<div class="loading-state">Carregando treino...</div>';
+    window.scrollTo(0, 0);
+
+    try {
+      const [treinos, aquecimentos, blocos] = await Promise.all([
+        get('treinos', `id=eq.${treinoId}`),
+        get('aquecimento', `treino_id=eq.${treinoId}`),
+        get('blocos', `treino_id=eq.${treinoId}&order=numero_bloco`)
+      ]);
+
+      const t = treinos[0];
+      if (!t) throw new Error('Treino não encontrado.');
+
+      // Registra log de acesso
+      registrarLog(t);
+
+      // Busca exercícios de todos os blocos
+      const blocosComEx = await Promise.all(blocos.map(async b => {
+        const exercicios = await get('exercicios', `bloco_id=eq.${b.id}&order=ordem`);
+        return { ...b, exercicios };
+      }));
+
+      const aquec = aquecimentos[0];
+
+      document.getElementById('treino-content').innerHTML = renderTreino(t, aquec, blocosComEx);
+
+    } catch (err) {
+      document.getElementById('treino-content').innerHTML =
+        `<div class="empty-state"><h3>Erro</h3><p>${err.message}</p></div>`;
+    }
+  }
+
+  function renderTreino(t, aquec, blocos) {
+    const tags = [
+      t.dia_semana ? `<div class="tag">${t.dia_semana}</div>` : '',
+      t.semana_mes ? `<div class="tag">Semana ${t.semana_mes}</div>` : '',
+      t.tempo_total_minutos ? `<div class="tag">⏱ ${t.tempo_total_minutos} min</div>` : '',
+    ].filter(Boolean).join('');
+
+    const aquecHTML = aquec ? `
+      <div class="treino-section">
+        <div class="treino-section-header">
+          <div class="section-num outline">A</div>
+          <span class="section-title-text">AQUECIMENTO</span>
+          ${aquec.tempo_estimado_minutos ? `<div class="section-meta"><span>⏱ ${aquec.tempo_estimado_minutos} min</span></div>` : ''}
+        </div>
+        <div class="treino-section-body">
+          <div class="aquecimento-desc">${aquec.descricao}</div>
+        </div>
+      </div>` : '';
+
+    const blocosHTML = blocos.map((b, i) => {
+      const exHTML = b.exercicios.map((ex, j) => {
+        const vidId = youtubeId(ex.link_youtube);
+        return `
+          <div class="exercicio-item">
+            <div class="exercicio-header">
+              <span class="exercicio-num-badge">${j + 1}</span>
+              <span class="exercicio-nome">${ex.nome}</span>
+            </div>
+            <div class="exercicio-chips">
+              ${ex.equipamento ? `<div class="chip">🏋️ <span style="color:var(--text-muted);font-size:11px;margin-right:3px">Material</span><strong>${ex.equipamento}</strong></div>` : ''}
+              ${ex.repeticoes ? `<div class="chip">🔁 <span style="color:var(--text-muted);font-size:11px;margin-right:3px">Reps.</span><strong>${ex.repeticoes}</strong></div>` : ''}
+              ${ex.cadencia ? `<div class="chip">⚡ <span style="color:var(--text-muted);font-size:11px;margin-right:3px">Cadência.</span><strong>${ex.cadencia}</strong></div>` : ''}
+            </div>
+            ${ex.observacoes_seguranca ? `<div class="exercicio-obs">⚠️ <strong style="margin-right:6px">Atenção:</strong>${ex.observacoes_seguranca}</div>` : ''}
+            ${ex.adaptacao_possivel ? `<div class="exercicio-adapt">🔄 <strong style="margin-right:6px">Adaptação:</strong>${ex.adaptacao_possivel}</div>` : ''}
+            ${vidId ? `
+              <div class="video-wrapper">
+                <iframe src="https://www.youtube.com/embed/${vidId}" allowfullscreen loading="lazy"></iframe>
+              </div>` : ''}
+          </div>`;
+      }).join('');
+
+      return `
+        <div class="treino-section">
+          <div class="treino-section-header">
+            <div class="section-num">${i + 1}</div>
+            <span class="section-title-text">BLOCO ${b.numero_bloco}</span>
+            <div class="section-meta">
+              ${b.numero_series ? `<span>${b.numero_series} séries</span>` : ''}
+              ${b.descanso_entre_series ? `<span>Descanso: ${b.descanso_entre_series}</span>` : ''}
+              ${b.tempo_estimado_minutos ? `<span>⏱ ${b.tempo_estimado_minutos} min</span>` : ''}
+            </div>
+          </div>
+          <div class="treino-section-body">${exHTML}</div>
+        </div>`;
+    }).join('');
+
+    const rodapeHTML = (t.alongamento || t.observacoes_gerais) ? `
+      <div class="treino-section">
+        <div class="treino-section-header">
+          <div class="section-num outline">R</div>
+          <span class="section-title-text">RODAPÉ</span>
+        </div>
+        <div class="treino-section-body">
+          ${t.alongamento ? `
+            <div style="margin-bottom:${t.observacoes_gerais ? '20px' : '0'}">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px;">Alongamento</div>
+              <div class="rodape-text">${t.alongamento}</div>
+            </div>` : ''}
+          ${t.observacoes_gerais ? `
+            <div>
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:10px;">Observações Gerais</div>
+              <div class="rodape-text">${t.observacoes_gerais}</div>
+            </div>` : ''}
+        </div>
+      </div>` : '';
+
+    return `
+      <div class="treino-hero">
+        <div class="treino-modalidade">${t.modalidade}</div>
+        <div class="treino-titulo">${t.dia_semana.toUpperCase()} — ${t.foco_muscular.toUpperCase()}</div>
+        <div class="treino-tags">${tags}</div>
+        ${t.equipamentos ? `<div class="treino-materials"><strong>Materials:</strong> ${t.equipamentos}</div>` : ''}
+      </div>
+      ${aquecHTML}
+      ${blocosHTML}
+      ${rodapeHTML}
+      <div class="mentor-line">Treino criado por ${t.mentor_responsavel} · Hit Haus</div>
+    `;
+  }
+
+  function voltarIndice() {
+    document.getElementById('page-index').style.display = 'block';
+    document.getElementById('page-treino').style.display = 'none';
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('load', verificarAuth);
+</script>
+</body>
+</html>
