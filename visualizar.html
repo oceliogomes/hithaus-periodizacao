@@ -575,7 +575,7 @@
   let usuarioAtual = null;
 
   async function loginGoogle() {
-    const redirectTo = 'https://hithaus-periodizacao.netlify.app/index.html';
+    const redirectTo = 'https://oceliogomes.github.io/hithaus-periodizacao/index.html';
     localStorage.setItem('hh_redirect', 'visualizar.html' + window.location.search);
     await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
   }
