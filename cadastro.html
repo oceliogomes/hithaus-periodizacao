@@ -806,27 +806,16 @@
           </div>
           <div class="field">
             <label>Dia da Semana <span class="required">*</span></label>
-            <select id="dia_semana" required>
+            <select id="dia_semana" required onchange="preencherFocoMuscular()">
               <option value="">Selecionar</option>
-              <option>Segunda</option>
-              <option>Terça</option>
-              <option>Quarta</option>
-              <option>Quinta</option>
-              <option>Sexta</option>
-              <option>Sábado</option>
-              <option>Domingo</option>
-              <option>FDS</option>
+              <option>Segunda e Quinta</option>
+              <option>Terça e Sexta</option>
+              <option>Quarta e FDS</option>
             </select>
           </div>
           <div class="field">
-            <label>Semana do Mês <span class="required">*</span></label>
-            <select id="semana_mes" required>
-              <option value="">Selecionar</option>
-              <option value="1">Semana 1</option>
-              <option value="2">Semana 2</option>
-              <option value="3">Semana 3</option>
-              <option value="4">Semana 4</option>
-            </select>
+            <label>Nº do Treino <span class="required">*</span></label>
+            <input type="number" id="semana_mes" placeholder="Ex: 1" min="1" required>
           </div>
 
         </div>
@@ -1509,7 +1498,7 @@
     // Validação com mensagens específicas
     if (!modalidade) { showToast('Campo obrigatório não preenchido: Modalidade.', 'error'); return; }
     if (!dia_semana) { showToast('Campo obrigatório não preenchido: Dia da Semana.', 'error'); return; }
-    if (!semana_mes) { showToast('Campo obrigatório não preenchido: Semana do Mês.', 'error'); return; }
+    if (!semana_mes) { showToast('Campo obrigatório não preenchido: Nº do Treino.', 'error'); return; }
     if (!foco_muscular) { showToast('Campo obrigatório não preenchido: Foco Muscular.', 'error'); return; }
     if (!mentor_responsavel) { showToast('Campo obrigatório não preenchido: Mentor Responsável.', 'error'); return; }
     const data_aula = document.getElementById('data_aula').value;
@@ -1753,7 +1742,7 @@
     }
   }
 
-  const ORDEM_DIAS = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo','FDS'];
+  const ORDEM_DIAS = ['Segunda e Quinta','Terça e Sexta','Quarta e FDS'];
 
   function renderListaTreinos() {
     const lista = document.getElementById('treinos-lista');
@@ -1805,7 +1794,7 @@
         <div class="treino-item-info">
           <div class="treino-item-titulo">${t.modalidade} — ${t.dia_semana} · ${t.foco_muscular}</div>
           <div class="treino-item-meta">
-            <span>Semana ${t.semana_mes}</span>
+            <span>Treino ${t.semana_mes}</span>
             ${t.nivel ? `<span>${t.nivel}</span>` : ''}
             <span>${t.mentor_responsavel}</span>
           </div>
@@ -1978,18 +1967,19 @@
   });
 
 
-  const FOCO_POR_DIA = {
-    'Segunda e Quinta': 'Quadríceps e Glúteo',
-    'Terça e Sexta': 'Posterior e Glúteo',
-    'Quarta e Fim de Semana': 'Glúteos e Core',
+  const FOCO_POR_DIA_RESHAPE = {
+    'Segunda e Quinta': 'Quadríceps/Glúteos',
+    'Terça e Sexta': 'Posterior/Glúteos',
+    'Quarta e FDS': 'Glúteos/Core',
   };
 
   function preencherFocoMuscular() {
     const dia = document.getElementById('dia_semana').value;
     const focoEl = document.getElementById('foco_muscular');
+    const modalidade = document.getElementById('modalidade')?.value || '';
     if (!focoEl) return;
-    if (dia && FOCO_POR_DIA[dia]) {
-      focoEl.value = FOCO_POR_DIA[dia];
+    if (modalidade === 'Reshape' && dia && FOCO_POR_DIA_RESHAPE[dia]) {
+      focoEl.value = FOCO_POR_DIA_RESHAPE[dia];
       focoEl.readOnly = true;
       focoEl.style.color = 'var(--text-muted)';
     } else {
