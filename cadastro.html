@@ -759,14 +759,12 @@
 
     <div id="treinos-lista-container">
 
-      <!-- FILTRO DE SEMANA -->
+      <!-- FILTRO DE PERÍODO -->
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted)">Semana:</span>
-        <button class="chip-semana ativo" onclick="filtrarSemana(0, this)">Todas</button>
-        <button class="chip-semana" onclick="filtrarSemana(1, this)">Semana 1</button>
-        <button class="chip-semana" onclick="filtrarSemana(2, this)">Semana 2</button>
-        <button class="chip-semana" onclick="filtrarSemana(3, this)">Semana 3</button>
-        <button class="chip-semana" onclick="filtrarSemana(4, this)">Semana 4</button>
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted)">Período:</span>
+        <button class="chip-semana ativo" onclick="filtrarPeriodo('todos', this)">Todos</button>
+        <button class="chip-semana" onclick="filtrarPeriodo('30dias', this)">Últimos 30 dias</button>
+        <button class="chip-semana" onclick="filtrarPeriodo('semana', this)">Última semana</button>
       </div>
 
       <!-- RESUMO DE DISTRIBUIÇÃO -->
@@ -1713,11 +1711,11 @@
     arrow.classList.toggle('aberto', listaVisivel);
   }
 
-  let semanaFiltroAtual = 0;
+  let periodoFiltroAtual = 'todos';
   let todosTreinosCache = [];
 
-  function filtrarSemana(semana, btn) {
-    semanaFiltroAtual = semana;
+  function filtrarPeriodo(periodo, btn) {
+    periodoFiltroAtual = periodo;
     document.querySelectorAll('.chip-semana').forEach(c => c.classList.remove('ativo'));
     btn.classList.add('ativo');
     renderListaTreinos();
@@ -1728,7 +1726,7 @@
     const lista = document.getElementById('treinos-lista');
 
     try {
-      let filtro = 'order=semana_mes.asc,dia_semana.asc';
+      let filtro = 'order=data_aula.desc,dia_semana.asc';
       if (usuarioAtual.papel !== 'gestor' && usuarioAtual.modalidade_mentor) {
         filtro += `&modalidade=eq.${encodeURIComponent(usuarioAtual.modalidade_mentor)}`;
       }
@@ -1774,21 +1772,33 @@
     const lista = document.getElementById('treinos-lista');
     const resumoDiv = document.getElementById('resumo-distribuicao');
 
-    let filtrados = semanaFiltroAtual === 0
-      ? todosTreinosCache
-      : todosTreinosCache.filter(t => t.semana_mes === semanaFiltroAtual);
+    const hoje = new Date();
+    const limite30 = new Date(); limite30.setDate(hoje.getDate() - 30);
+    const limite7 = new Date(); limite7.setDate(hoje.getDate() - 7);
 
-    // Ordena por dia da semana
-    filtrados.sort((a, b) => ORDEM_DIAS.indexOf(a.dia_semana) - ORDEM_DIAS.indexOf(b.dia_semana));
+    let filtrados = todosTreinosCache.filter(t => {
+      if (periodoFiltroAtual === 'todos') return true;
+      if (!t.data_aula) return periodoFiltroAtual === 'todos';
+      const dataT = new Date(t.data_aula + 'T12:00:00');
+      if (periodoFiltroAtual === '30dias') return dataT >= limite30;
+      if (periodoFiltroAtual === 'semana') return dataT >= limite7;
+      return true;
+    });
+
+    // Ordena por data mais recente primeiro, depois por dia
+    filtrados.sort((a, b) => {
+      if (a.data_aula && b.data_aula) return b.data_aula.localeCompare(a.data_aula);
+      return ORDEM_DIAS.indexOf(a.dia_semana) - ORDEM_DIAS.indexOf(b.dia_semana);
+    });
 
     if (!filtrados.length) {
-      lista.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:16px 0">Nenhum treino encontrado para esta semana.</div>';
+      lista.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:16px 0">Nenhum treino encontrado para este período.</div>';
       resumoDiv.style.display = 'none';
       return;
     }
 
     // Monta resumo de distribuição muscular
-    if (semanaFiltroAtual > 0) {
+    if (periodoFiltroAtual !== 'todos') {
       const contagem = {};
       filtrados.forEach(t => {
         (t._grupos || []).forEach(g => { contagem[g] = (contagem[g] || 0) + 1; });
@@ -1815,13 +1825,16 @@
       resumoDiv.style.display = 'none';
     }
 
-    lista.innerHTML = filtrados.map(t => `
+    const MESES_CARD = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    lista.innerHTML = filtrados.map(t => {
+      const mesAno = t.data_aula ? `${MESES_CARD[parseInt(t.data_aula.substring(5,7))]}/${t.data_aula.substring(0,4)}` : '—';
+      return `
       <div class="treino-item">
         <div class="treino-item-info">
           <div class="treino-item-titulo">${t.modalidade} — ${t.dia_semana} · ${t.foco_muscular}</div>
           <div class="treino-item-meta">
             <span>Treino ${t.semana_mes}</span>
-            ${t.nivel ? `<span>${t.nivel}</span>` : ''}
+            <span>${mesAno}</span>
             <span>${t.mentor_responsavel}</span>
           </div>
           ${t._grupos && t._grupos.length ? `
@@ -1833,8 +1846,8 @@
           <button class="btn-editar" onclick="carregarTreinoParaEdicao('${t.id}')">✏️ Editar</button>
           <button class="btn-deletar" onclick="deletarTreino('${t.id}', '${t.modalidade} ${t.dia_semana}')">🗑️</button>
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   }
 
   async function carregarTreinoParaEdicao(treinoId) {
