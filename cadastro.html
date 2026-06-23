@@ -837,8 +837,32 @@
             <input type="text" id="materials" placeholder="Ex: Mini band, Halteres, Colchonete">
           </div>
           <div class="field">
-            <label>Data da Aula <span class="required">*</span></label>
-            <input type="date" id="data_aula" required>
+            <label>Mês/Ano <span class="required">*</span></label>
+            <div style="display:flex;gap:8px">
+              <select id="data_mes" required style="flex:1">
+                <option value="">Mês</option>
+                <option value="01">Janeiro</option>
+                <option value="02">Fevereiro</option>
+                <option value="03">Março</option>
+                <option value="04">Abril</option>
+                <option value="05">Maio</option>
+                <option value="06">Junho</option>
+                <option value="07">Julho</option>
+                <option value="08">Agosto</option>
+                <option value="09">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+              </select>
+              <select id="data_ano" required style="flex:1">
+                <option value="">Ano</option>
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+                <option value="2029">2029</option>
+                <option value="2030">2030</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -1501,8 +1525,10 @@
     if (!semana_mes) { showToast('Campo obrigatório não preenchido: Nº do Treino.', 'error'); return; }
     if (!foco_muscular) { showToast('Campo obrigatório não preenchido: Foco Muscular.', 'error'); return; }
     if (!mentor_responsavel) { showToast('Campo obrigatório não preenchido: Mentor Responsável.', 'error'); return; }
-    const data_aula = document.getElementById('data_aula').value;
-    if (!data_aula) { showToast('Campo obrigatório não preenchido: Data da Aula.', 'error'); return; }
+    const data_mes = document.getElementById('data_mes').value;
+    const data_ano = document.getElementById('data_ano').value;
+    const data_aula = (data_mes && data_ano) ? `${data_ano}-${data_mes}-01` : '';
+    if (!data_aula) { showToast('Campo obrigatório não preenchido: Mês/Ano.', 'error'); return; }
 
     // Valida se ao menos um bloco tem séries e exercício preenchidos
     const blocoEls = document.querySelectorAll('.bloco-wrapper');
@@ -1834,6 +1860,11 @@
       document.getElementById('materials').value = t.equipamentos || '';
       document.getElementById('alongamento').value = t.alongamento || '';
       document.getElementById('observacoes_gerais').value = t.observacoes_gerais || '';
+      if (t.data_aula) {
+        const partes = t.data_aula.split('-');
+        document.getElementById('data_ano').value = partes[0] || '';
+        document.getElementById('data_mes').value = partes[1] || '';
+      }
 
       // Preenche aquecimento
       if (aquecimentos[0]) {
