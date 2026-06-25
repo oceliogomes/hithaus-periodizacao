@@ -273,14 +273,14 @@ async function carregarFinanceiro(inicio, fim) {
 }
 
 async function carregarOperacional(inicio, fim) {
-  var logs = await qBia('logs_atendimento', 'created_at=gte.' + inicio + '&created_at=lte.' + fim);
+  var logs = await qBia('logs_atendimento', 'data_hora=gte.' + inicio + '&data_hora=lte.' + fim);
   var total = logs.length;
-  var transferidos = logs.filter(function(l) { return l.status === 'transferido' || l.transferido === true; }).length;
+  var transferidos = logs.filter(function(l) { return l.status === 'Transferido' || l.tipo === 'Transferido'; }).length;
   var autonomos = total - transferidos;
   var taxaAuto = total > 0 ? Math.round((autonomos / total) * 100) : 0;
 
   var foraH = logs.filter(function(l) {
-    var d = new Date(l.created_at);
+    var d = new Date(l.data_hora);
     var h = d.getUTCHours() - 3;
     var m = d.getUTCMinutes();
     var hd = h + m / 60;
@@ -297,7 +297,7 @@ async function carregarOperacional(inicio, fim) {
 
   var porDia = {};
   logs.forEach(function(l) {
-    var dia = l.created_at.substring(0, 10);
+    var dia = l.data_hora.substring(0, 10);
     porDia[dia] = (porDia[dia] || 0) + 1;
   });
   var dias = Object.keys(porDia).sort();
@@ -305,6 +305,10 @@ async function carregarOperacional(inicio, fim) {
   var labels = dias.map(function(d) { return d.substring(8) + '/' + mes; });
   var valores = dias.map(function(d) { return porDia[d]; });
 
+  if (dias.length === 0) {
+    document.getElementById('grafico-atendimentos').parentElement.innerHTML += '<p style="color:#555;font-size:13px;text-align:center;padding:20px">Sem atendimentos registrados no período</p>';
+    return;
+  }
   if (grafA) grafA.destroy();
   grafA = new Chart(document.getElementById('grafico-atendimentos'), {
     type: 'line',
