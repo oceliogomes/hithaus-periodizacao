@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bia — Inteligência de Atendimento | Hit Haus</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --preto: #0a0a0a;
+      --verde: #00FF7F;
+      --verde-escuro: #00cc66;
+      --cinza-escuro: #141414;
+      --cinza-medio: #1e1e1e;
+      --cinza-borda: #2a2a2a;
+      --branco: #ffffff;
+      --branco-suave: #cccccc;
+      --vermelho: #ff4444;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--preto);
+      color: var(--branco);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* AUTH */
+    #auth-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 32px;
+    }
+
+    #auth-screen h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      letter-spacing: 4px;
+      color: var(--verde);
+    }
+
+    #auth-screen p {
+      color: var(--branco-suave);
+      font-size: 14px;
+    }
+
+    .btn-google {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--cinza-medio);
+      border: 1px solid var(--cinza-borda);
+      color: var(--branco);
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .btn-google:hover {
+      border-color: var(--verde);
+      background: #1a1a1a;
+    }
+
+    .btn-google svg { width: 20px; height: 20px; }
+
+    /* HEADER */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--cinza-borda);
+      position: sticky;
+      top: 0;
+      background: var(--preto);
+      z-index: 100;
+    }
+
+    .header-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 3px;
+    }
+
+    .header-logo span { color: var(--verde); }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .user-email {
+      font-size: 13px;
+      color: var(--branco-suave);
+    }
+
+    .btn-logout {
+      background: transparent;
+      border: 1px solid var(--cinza-borda);
+      color: var(--branco-suave);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .btn-logout:hover { border-color: var(--vermelho); color: var(--vermelho); }
+
+    /* FILTRO DE MÊS */
+    .filtro-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--cinza-borda);
+    }
+
+    .filtro-bar h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 2px;
+      color: var(--branco-suave);
+    }
+
+    .filtro-mes {
+      display: flex;
+      gap: 8px;
+    }
+
+    .filtro-mes select {
+      background: var(--cinza-medio);
+      border: 1px solid var(--cinza-borda);
+      color: var(--branco);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .btn-filtrar {
+      background: var(--verde);
+      color: var(--preto);
+      border: none;
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-filtrar:hover { background: var(--verde-escuro); }
+
+    /* MAIN */
+    main {
+      padding: 32px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* SEÇÃO */
+    .secao-titulo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 13px;
+      letter-spacing: 3px;
+      color: var(--verde);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--cinza-borda);
+    }
+
+    .secao { margin-bottom: 48px; }
+
+    /* CARDS */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--cinza-escuro);
+      border: 1px solid var(--cinza-borda);
+      border-radius: 12px;
+      padding: 24px;
+      transition: border-color 0.2s;
+    }
+
+    .card:hover { border-color: var(--verde); }
+
+    .card-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 1.5px;
+      color: var(--branco-suave);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .card-valor {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
+      letter-spacing: 1px;
+      line-height: 1;
+      color: var(--branco);
+    }
+
+    .card-valor.destaque { color: var(--verde); }
+
+    .card-sub {
+      font-size: 12px;
+      color: var(--branco-suave);
+      margin-top: 6px;
+    }
+
+    /* GRÁFICO */
+    .grafico-container {
+      background: var(--cinza-escuro);
+      border: 1px solid var(--cinza-borda);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .grafico-titulo {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 1px;
+      color: var(--branco-suave);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    canvas { width: 100% !important; }
+
+    /* LOADING */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px;
+      color: var(--branco-suave);
+      font-size: 14px;
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--cinza-borda);
+      border-top-color: var(--verde);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 12px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #app { display: none; }
+
+    /* ERRO */
+    .erro-acesso {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 16px;
+      text-align: center;
+    }
+
+    .erro-acesso h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      color: var(--vermelho);
+    }
+
+    .erro-acesso p { color: var(--branco-suave); font-size: 14px; }
+
+    /* GRID 2 COLUNAS */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      main { padding: 16px; }
+      .filtro-bar { flex-direction: column; gap: 12px; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TELA DE LOGIN -->
+<div id="auth-screen">
+  <div style="text-align:center">
+    <h1>HIT HAUS</h1>
+    <p style="margin-top:4px;font-size:12px;letter-spacing:2px;color:#555">INTELIGÊNCIA BIA</p>
+  </div>
+  <p>Acesso restrito à equipe autorizada</p>
+  <button class="btn-google" onclick="loginGoogle()">
+    <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+    Entrar com Google
+  </button>
+</div>
+
+<!-- ERRO DE ACESSO -->
+<div id="erro-acesso" class="erro-acesso" style="display:none">
+  <h2>Acesso Negado</h2>
+  <p id="erro-msg">Seu e-mail não tem permissão para acessar este painel.</p>
+  <button class="btn-logout" onclick="logout()">Sair</button>
+</div>
+
+<!-- APP PRINCIPAL -->
+<div id="app">
+  <header>
+    <div class="header-logo">HIT HAUS <span>BIA</span></div>
+    <div class="header-right">
+      <span class="user-email" id="user-email"></span>
+      <button class="btn-logout" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <div class="filtro-bar">
+    <h2>PAINEL DE INTELIGÊNCIA</h2>
+    <div class="filtro-mes">
+      <select id="sel-mes">
+        <option value="01">Janeiro</option>
+        <option value="02">Fevereiro</option>
+        <option value="03">Março</option>
+        <option value="04">Abril</option>
+        <option value="05">Maio</option>
+        <option value="06" selected>Junho</option>
+        <option value="07">Julho</option>
+        <option value="08">Agosto</option>
+        <option value="09">Setembro</option>
+        <option value="10">Outubro</option>
+        <option value="11">Novembro</option>
+        <option value="12">Dezembro</option>
+      </select>
+      <select id="sel-ano">
+        <option value="2025">2025</option>
+        <option value="2026" selected>2026</option>
+      </select>
+      <button class="btn-filtrar" onclick="carregarDados()">Atualizar</button>
+    </div>
+  </div>
+
+  <main>
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      Carregando dados...
+    </div>
+
+    <div id="conteudo" style="display:none">
+
+      <!-- SEÇÃO 1: IMPACTO FINANCEIRO -->
+      <div class="secao">
+        <div class="secao-titulo">IMPACTO FINANCEIRO</div>
+        <div class="cards-grid">
+          <div class="card">
+            <div class="card-label">Vendas via Bia</div>
+            <div class="card-valor destaque" id="total-valor">R$ 0</div>
+            <div class="card-sub">no período selecionado</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Conversões</div>
+            <div class="card-valor" id="total-conversoes">0</div>
+            <div class="card-sub">vendas influenciadas</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Ticket Médio</div>
+            <div class="card-valor" id="ticket-medio">R$ 0</div>
+            <div class="card-sub">por venda via Bia</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Novos Assinantes</div>
+            <div class="card-valor" id="novos-assinantes">0</div>
+            <div class="card-sub">1ª assinatura via Bia</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEÇÃO 2: EFICIÊNCIA OPERACIONAL -->
+      <div class="secao">
+        <div class="secao-titulo">EFICIÊNCIA OPERACIONAL</div>
+        <div class="cards-grid" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-label">Atendimentos</div>
+            <div class="card-valor" id="total-atendimentos">0</div>
+            <div class="card-sub">no período</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Resolução Autônoma</div>
+            <div class="card-valor destaque" id="taxa-autonoma">0%</div>
+            <div class="card-sub">sem precisar de humano</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Fora do Horário</div>
+            <div class="card-valor" id="fora-horario">0</div>
+            <div class="card-sub">atendimentos noturnos</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Transferências</div>
+            <div class="card-valor" id="total-transferencias">0</div>
+            <div class="card-sub">para recepção humana</div>
+          </div>
+        </div>
+        <div class="grafico-container">
+          <div class="grafico-titulo">Atendimentos por dia</div>
+          <canvas id="grafico-atendimentos" height="80"></canvas>
+        </div>
+      </div>
+
+      <!-- SEÇÃO 3: SATISFAÇÃO -->
+      <div class="secao">
+        <div class="secao-titulo">SATISFAÇÃO DO CLIENTE</div>
+        <div class="grid-2">
+          <div>
+            <div class="cards-grid" style="grid-template-columns: 1fr 1fr; margin-bottom:16px">
+              <div class="card">
+                <div class="card-label">Nota Média</div>
+                <div class="card-valor destaque" id="nota-media">—</div>
+                <div class="card-sub">de 0 a 10</div>
+              </div>
+              <div class="card">
+                <div class="card-label">Avaliações</div>
+                <div class="card-valor" id="total-avaliacoes">0</div>
+                <div class="card-sub">respondidas</div>
+              </div>
+              <div class="card">
+                <div class="card-label">Taxa de Resposta</div>
+                <div class="card-valor" id="taxa-resposta">0%</div>
+                <div class="card-sub">do total enviado</div>
+              </div>
+              <div class="card">
+                <div class="card-label">Promotores</div>
+                <div class="card-valor destaque" id="promotores">0</div>
+                <div class="card-sub">nota 9 ou 10</div>
+              </div>
+            </div>
+          </div>
+          <div class="grafico-container">
+            <div class="grafico-titulo">Distribuição das notas</div>
+            <canvas id="grafico-notas" height="160"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- fim conteudo -->
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+  // ================================
+  // CONFIGURAÇÃO SUPABASE BIA
+  // ================================
+  const SUPA_URL = 'https://ychphpdbiupdrbgwufal.supabase.co';
+  const SUPA_KEY = 'sb_publishable_NKiafrK1mchWhmVecY3Ffw_UMrUt3fK';
+
+  // SUPABASE PERIODIZACAO (auth)
+  const SUPA_PERIOD_URL = 'https://weptswkvywbqmosfljmk.supabase.co';
+  const SUPA_PERIOD_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlcHRzd2t2eXdicW1vc2Zsam1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyOTcyMDYsImV4cCI6MjA5Njg3MzIwNn0.SokWiuK4WwaiLBlurayH4dwUAA4eFuxYFQayEwzyqTo';
+
+  // EMAILS AUTORIZADOS
+  const EMAILS_AUTORIZADOS = [
+    'oceliodiagonal@gmail.com'
+  ];
+
+  let grafAtendimentos = null;
+  let grafNotas = null;
+  let usuarioAtual = null;
+
+  // ================================
+  // AUTH
+  // ================================
+  async function loginGoogle() {
+    // Redireciona para OAuth do Supabase de periodização (auth compartilhada)
+    const redirectTo = window.location.href;
+    const url = `${SUPA_PERIOD_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
+    window.location.href = url;
+  }
+
+  async function verificarAuth() {
+    // Pega token do hash da URL (retorno OAuth)
+    const hash = window.location.hash;
+    if (hash.includes('access_token')) {
+      const params = new URLSearchParams(hash.substring(1));
+      const token = params.get('access_token');
+      if (token) {
+        localStorage.setItem('bia_token', token);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+
+    const token = localStorage.getItem('bia_token');
+    if (!token) {
+      document.getElementById('auth-screen').style.display = 'flex';
+      return;
+    }
+
+    // Busca dados do usuário
+    try {
+      const res = await fetch(`${SUPA_PERIOD_URL}/auth/v1/user`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPA_PERIOD_KEY }
+      });
+      const user = await res.json();
+
+      if (!user.email) throw new Error('Sem email');
+
+      usuarioAtual = user;
+
+      if (!EMAILS_AUTORIZADOS.includes(user.email.toLowerCase())) {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('erro-acesso').style.display = 'flex';
+        document.getElementById('erro-msg').textContent = `${user.email} não tem permissão de acesso.`;
+        return;
+      }
+
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('user-email').textContent = user.email;
+      await carregarDados();
+
+    } catch(e) {
+      localStorage.removeItem('bia_token');
+      document.getElementById('auth-screen').style.display = 'flex';
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem('bia_token');
+    window.location.reload();
+  }
+
+  // ================================
+  // QUERIES SUPABASE BIA
+  // ================================
+  async function query(tabela, params = '') {
+    const res = await fetch(`${SUPA_URL}/rest/v1/${tabela}?${params}`, {
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': `Bearer ${SUPA_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      }
+    });
+    return res.json();
+  }
+
+  // ================================
+  // CARREGAR DADOS
+  // ================================
+  async function carregarDados() {
+    document.getElementById('loading').style.display = 'flex';
+    document.getElementById('conteudo').style.display = 'none';
+
+    const mes = document.getElementById('sel-mes').value;
+    const ano = document.getElementById('sel-ano').value;
+    const inicioMes = `${ano}-${mes}-01`;
+    const fimMes = new Date(ano, parseInt(mes), 0);
+    const fimMesStr = `${ano}-${mes}-${String(fimMes.getDate()).padStart(2,'0')}`;
+
+    try {
+      await Promise.all([
+        carregarFinanceiro(inicioMes, fimMesStr),
+        carregarOperacional(inicioMes, fimMesStr),
+        carregarCSAT(inicioMes, fimMesStr)
+      ]);
+
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('conteudo').style.display = 'block';
+    } catch(e) {
+      document.getElementById('loading').innerHTML = `<span style="color:#ff4444">Erro ao carregar dados. Verifique a conexão.</span>`;
+      console.error(e);
+    }
+  }
+
+  // ================================
+  // SEÇÃO 1: FINANCEIRO
+  // ================================
+  async function carregarFinanceiro(inicio, fim) {
+    // Vendas avulsas via Bia
+    const vendas = await query('conversoes',
+      `atendida_pela_bia=eq.true&valor=gt.0&is_subscription=eq.false&data_compra=gte.${inicio}&data_compra=lte.${fim}T23:59:59&produto=not.ilike.*cortesia*&produto=not.ilike.*recorrente*&produto=not.like.*%7B%7B*`
+    );
+
+    const totalValor = vendas.reduce((s, v) => s + (parseFloat(v.valor) || 0), 0);
+    const totalConv = vendas.length;
+    const ticketMedio = totalConv > 0 ? totalValor / totalConv : 0;
+
+    // Novos assinantes via Bia — todos os assinantes do mês que foram atendidos pela Bia
+    const assinantes = await query('conversoes',
+      `atendida_pela_bia=eq.true&is_subscription=eq.true&data_compra=gte.${inicio}&data_compra=lte.${fim}T23:59:59`
+    );
+
+    // Filtra apenas quem é novo assinante (primeira assinatura)
+    const todosTelefones = [...new Set(assinantes.map(a => a.telefone))];
+    let novosAssinantes = 0;
+    for (const tel of todosTelefones) {
+      const historico = await query('conversoes',
+        `telefone=eq.${tel}&is_subscription=eq.true&data_compra=lt.${inicio}&select=id`
+      );
+      if (historico.length === 0) novosAssinantes++;
+    }
+
+    document.getElementById('total-valor').textContent = `R$ ${totalValor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+    document.getElementById('total-conversoes').textContent = totalConv;
+    document.getElementById('ticket-medio').textContent = `R$ ${ticketMedio.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+    document.getElementById('novos-assinantes').textContent = novosAssinantes;
+  }
+
+  // ================================
+  // SEÇÃO 2: OPERACIONAL
+  // ================================
+  async function carregarOperacional(inicio, fim) {
+    const logs = await query('logs_atendimento',
+      `created_at=gte.${inicio}&created_at=lte.${fim}T23:59:59`
+    );
+
+    const total = logs.length;
+    const transferidos = logs.filter(l => l.status === 'transferido' || l.transferido === true).length;
+    const autonomos = total - transferidos;
+    const taxaAutonoma = total > 0 ? Math.round((autonomos / total) * 100) : 0;
+
+    // Fora do horário: antes das 6h20 ou depois das 20h30
+    const foraHorario = logs.filter(l => {
+      const d = new Date(l.created_at);
+      // Brasília = UTC-3
+      const h = d.getUTCHours() - 3;
+      const m = d.getUTCMinutes();
+      const hDecimal = h + m / 60;
+      const dia = d.getUTCDay();
+      // Horários por dia
+      const horarios = {0:{a:8,f:12},1:{a:6.33,f:20.5},2:{a:6.33,f:20.5},3:{a:6.33,f:20.5},4:{a:6.33,f:20.5},5:{a:6.33,f:19.5},6:{a:8,f:13}};
+      const h2 = horarios[dia < 0 ? dia + 7 : dia] || horarios[1];
+      return hDecimal < h2.a || hDecimal >= h2.f;
+    }).length;
+
+    document.getElementById('total-atendimentos').textContent = total;
+    document.getElementById('taxa-autonoma').textContent = `${taxaAutonoma}%`;
+    document.getElementById('fora-horario').textContent = foraHorario;
+    document.getElementById('total-transferencias').textContent = transferidos;
+
+    // Gráfico por dia
+    const porDia = {};
+    logs.forEach(l => {
+      const dia = l.created_at.substring(0, 10);
+      porDia[dia] = (porDia[dia] || 0) + 1;
+    });
+
+    const dias = Object.keys(porDia).sort();
+    const valores = dias.map(d => porDia[d]);
+    const labels = dias.map(d => {
+      const [,, dd] = d.split('-');
+      return `${dd}/${document.getElementById('sel-mes').value}`;
+    });
+
+    if (grafAtendimentos) grafAtendimentos.destroy();
+    grafAtendimentos = new Chart(document.getElementById('grafico-atendimentos'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data: valores,
+          borderColor: '#00FF7F',
+          backgroundColor: 'rgba(0,255,127,0.08)',
+          borderWidth: 2,
+          pointBackgroundColor: '#00FF7F',
+          pointRadius: 3,
+          tension: 0.4,
+          fill: true
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#888', font: { size: 11 } }, grid: { color: '#1e1e1e' } },
+          y: { ticks: { color: '#888', font: { size: 11 } }, grid: { color: '#1e1e1e' }, beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  // ================================
+  // SEÇÃO 3: CSAT
+  // ================================
+  async function carregarCSAT(inicio, fim) {
+    const enviadas = await query('csat_respostas',
+      `data_envio=gte.${inicio}&data_envio=lte.${fim}T23:59:59`
+    );
+    const respondidas = enviadas.filter(r => r.nota !== null && r.status === 'respondido');
+    const totalEnviadas = enviadas.length;
+    const totalRespondidas = respondidas.length;
+    const taxaResposta = totalEnviadas > 0 ? Math.round((totalRespondidas / totalEnviadas) * 100) : 0;
+    const somaNotas = respondidas.reduce((s, r) => s + (r.nota || 0), 0);
+    const mediaNotas = totalRespondidas > 0 ? (somaNotas / totalRespondidas).toFixed(1) : null;
+    const promotores = respondidas.filter(r => r.nota >= 9).length;
+
+    document.getElementById('nota-media').textContent = mediaNotas || '—';
+    document.getElementById('total-avaliacoes').textContent = totalRespondidas;
+    document.getElementById('taxa-resposta').textContent = `${taxaResposta}%`;
+    document.getElementById('promotores').textContent = promotores;
+
+    // Distribuição de notas 0-10
+    const dist = Array(11).fill(0);
+    respondidas.forEach(r => { if (r.nota >= 0 && r.nota <= 10) dist[r.nota]++; });
+
+    if (grafNotas) grafNotas.destroy();
+    grafNotas = new Chart(document.getElementById('grafico-notas'), {
+      type: 'bar',
+      data: {
+        labels: ['0','1','2','3','4','5','6','7','8','9','10'],
+        datasets: [{
+          data: dist,
+          backgroundColor: dist.map((_, i) =>
+            i >= 9 ? '#00FF7F' : i >= 7 ? '#00cc66' : i >= 5 ? '#888' : '#444'
+          ),
+          borderRadius: 4
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#888', font: { size: 11 } }, grid: { color: '#1e1e1e' } },
+          y: { ticks: { color: '#888', font: { size: 11 } }, grid: { color: '#1e1e1e' }, beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  // ================================
+  // INIT
+  // ================================
+  verificarAuth();
+</script>
+</body>
+</html>
