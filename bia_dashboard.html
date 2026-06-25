@@ -573,9 +573,10 @@
 
     const mes = document.getElementById('sel-mes').value;
     const ano = document.getElementById('sel-ano').value;
-    const inicioMes = `${ano}-${mes}-01`;
-    const fimMes = new Date(ano, parseInt(mes), 0);
-    const fimMesStr = `${ano}-${mes}-${String(fimMes.getDate()).padStart(2,'0')}`;
+    const inicioMes = `${ano}-${mes}-01T00:00:00`;
+    
+    const ultimoDia = new Date(parseInt(ano), parseInt(mes), 0).getDate();
+    const fimMesStr = `${ano}-${mes}-${String(ultimoDia).padStart(2,'0')}T23:59:59`;
 
     try {
       await Promise.all([
@@ -597,18 +598,20 @@
   // ================================
   async function carregarFinanceiro(inicio, fim) {
     // Vendas avulsas via Bia
-    const vendas = await query('conversoes',
-      `atendida_pela_bia=eq.true&valor=gt.0&is_subscription=eq.false&data_compra=gte.${inicio}&data_compra=lte.${fim}T23:59:59&produto=not.ilike.*cortesia*&produto=not.ilike.*recorrente*&produto=not.like.*%7B%7B*`
+    const vendasRaw = await query('conversoes',
+      `atendida_pela_bia=eq.true&valor=gt.0&is_subscription=eq.false&data_compra=gte.${inicio}&data_compra=lte.${fim}&produto=not.ilike.*cortesia*&produto=not.ilike.*recorrente*&produto=not.like.*%7B%7B*`
     );
+    const vendas = Array.isArray(vendasRaw) ? vendasRaw : [];
 
     const totalValor = vendas.reduce((s, v) => s + (parseFloat(v.valor) || 0), 0);
     const totalConv = vendas.length;
     const ticketMedio = totalConv > 0 ? totalValor / totalConv : 0;
 
     // Novos assinantes via Bia — todos os assinantes do mês que foram atendidos pela Bia
-    const assinantes = await query('conversoes',
-      `atendida_pela_bia=eq.true&is_subscription=eq.true&data_compra=gte.${inicio}&data_compra=lte.${fim}T23:59:59`
+    const assinantesRaw = await query('conversoes',
+      `atendida_pela_bia=eq.true&is_subscription=eq.true&data_compra=gte.${inicio}&data_compra=lte.${fim}`
     );
+    const assinantes = Array.isArray(assinantesRaw) ? assinantesRaw : [];
 
     // Filtra apenas quem é novo assinante (primeira assinatura)
     const todosTelefones = [...new Set(assinantes.map(a => a.telefone))];
@@ -630,8 +633,10 @@
   // SEÇÃO 2: OPERACIONAL
   // ================================
   async function carregarOperacional(inicio, fim) {
-    const logs = await query('logs_atendimento',
-      `created_at=gte.${inicio}&created_at=lte.${fim}T23:59:59`
+    const logsRaw = await query('logs_atendimento',
+      `created_at=gte.${inicio}&created_at=lte.${fim}`);
+    const logs = Array.isArray(logsRaw) ? logsRaw : [];
+      `created_at=gte.${inicio}&created_at=lte.${fim}`
     );
 
     const total = logs.length;
@@ -702,9 +707,10 @@
   // SEÇÃO 3: CSAT
   // ================================
   async function carregarCSAT(inicio, fim) {
-    const enviadas = await query('csat_respostas',
-      `data_envio=gte.${inicio}&data_envio=lte.${fim}T23:59:59`
+    const enviadasRaw = await query('csat_respostas',
+      `data_envio=gte.${inicio}&data_envio=lte.${fim}`
     );
+    const enviadas = Array.isArray(enviadasRaw) ? enviadasRaw : [];
     const respondidas = enviadas.filter(r => r.nota !== null && r.status === 'respondido');
     const totalEnviadas = enviadas.length;
     const totalRespondidas = respondidas.length;
