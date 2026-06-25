@@ -634,10 +634,9 @@
   // ================================
   async function carregarOperacional(inicio, fim) {
     const logsRaw = await query('logs_atendimento',
-      `created_at=gte.${inicio}&created_at=lte.${fim}`);
-    const logs = Array.isArray(logsRaw) ? logsRaw : [];
       `created_at=gte.${inicio}&created_at=lte.${fim}`
     );
+    const logs = Array.isArray(logsRaw) ? logsRaw : [];
 
     const total = logs.length;
     const transferidos = logs.filter(l => l.status === 'transferido' || l.transferido === true).length;
