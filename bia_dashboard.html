@@ -120,6 +120,17 @@ canvas{width:100%!important}
           <div class="card"><div class="card-label">Fora do Horário</div><div class="card-valor" id="fora-horario">0</div><div class="card-sub">atendimentos noturnos</div></div>
           <div class="card"><div class="card-label">Transferências</div><div class="card-valor" id="total-transferencias">0</div><div class="card-sub">para recepção humana</div></div>
         </div>
+        <div class="grafico-container" style="margin-bottom:16px">
+          <div class="grafico-titulo">Atendimentos por hora do dia (Brasília)</div>
+          <canvas id="grafico-horas" height="80"></canvas>
+        </div>
+        <div style="display:none">
+        </div>
+        </div>
+        <div class="grafico-container" style="margin-bottom:16px">
+          <div class="grafico-titulo">Atendimentos por hora do dia (Brasília)</div>
+          <canvas id="grafico-horas" height="80"></canvas>
+        </div>
         <div class="grafico-container">
           <div class="grafico-titulo">Atendimentos por dia</div>
           <canvas id="grafico-atendimentos" height="80"></canvas>
@@ -157,6 +168,7 @@ var SUPA_AUTH_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 var EMAILS_OK = ['oceliodiagonal@gmail.com'];
 var grafA = null;
 var grafN = null;
+var grafH = null;
 
 document.getElementById('btn-login').addEventListener('click', function() {
   var redirectTo = window.location.href;
@@ -268,7 +280,7 @@ async function carregarFinanceiro(inicio, fim) {
 
   document.getElementById('total-valor').textContent = 'R$ ' + totalValor.toLocaleString('pt-BR', {minimumFractionDigits:2});
   document.getElementById('total-conversoes').textContent = totalConv;
-  document.getElementById('ticket-medio').textContent = 'R$ ' + ticketMedio.toLocaleString('pt-BR', {minimumFractionDigits:2});
+  document.getElementById('ticket-medio').textContent = 'R$ ' + ticketMedio.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
   document.getElementById('novos-assinantes').textContent = novos;
 }
 
@@ -304,6 +316,47 @@ async function carregarOperacional(inicio, fim) {
   var mes = document.getElementById('sel-mes').value;
   var labels = dias.map(function(d) { return d.substring(8) + '/' + mes; });
   var valores = dias.map(function(d) { return porDia[d]; });
+
+  // Gráfico por hora
+  var porHora = new Array(24).fill(0);
+  logs.forEach(function(l) {
+    var d = new Date(l.data_hora);
+    var h = d.getUTCHours() - 3;
+    if (h < 0) h += 24;
+    if (h >= 0 && h < 24) porHora[h]++;
+  });
+  var labelsHora = porHora.map(function(_, i) { return i + 'h'; });
+  var picoHora = porHora.indexOf(Math.max.apply(null, porHora));
+
+  if (grafH) grafH.destroy();
+  grafH = new Chart(document.getElementById('grafico-horas'), {
+    type: 'bar',
+    data: {
+      labels: labelsHora,
+      datasets: [{
+        data: porHora,
+        backgroundColor: porHora.map(function(_, i) {
+          return i === picoHora ? '#00FF7F' : 'rgba(0,255,127,0.25)';
+        }),
+        borderRadius: 3
+      }]
+    },
+    options: {
+      plugins: {
+        legend: {display:false},
+        tooltip: {
+          callbacks: {
+            title: function(items) { return 'Hora: ' + items[0].label; },
+            label: function(item) { return item.raw + ' atendimentos' + (item.dataIndex === picoHora ? ' ← pico' : ''); }
+          }
+        }
+      },
+      scales: {
+        x: {ticks:{color:'#888',font:{size:10}}, grid:{color:'#1e1e1e'}},
+        y: {ticks:{color:'#888',font:{size:11}}, grid:{color:'#1e1e1e'}, beginAtZero:true}
+      }
+    }
+  });
 
   if (dias.length === 0) {
     document.getElementById('grafico-atendimentos').parentElement.innerHTML += '<p style="color:#555;font-size:13px;text-align:center;padding:20px">Sem atendimentos registrados no período</p>';
