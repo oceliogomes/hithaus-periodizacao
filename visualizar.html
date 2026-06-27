@@ -605,12 +605,25 @@
     <p class="page-subtitle" id="index-subtitle">Selecione o dia para ver o treino completo.</p>
 
     <div class="semana-selector">
-      <label>Semana do mês:</label>
-      <select id="select-semana" onchange="carregarTreinos()">
-        <option value="1">Semana 1</option>
-        <option value="2">Semana 2</option>
-        <option value="3">Semana 3</option>
-        <option value="4">Semana 4</option>
+      <label>Mês:</label>
+      <select id="select-mes" onchange="carregarTreinos()">
+        <option value="01">Janeiro</option>
+        <option value="02">Fevereiro</option>
+        <option value="03">Março</option>
+        <option value="04">Abril</option>
+        <option value="05">Maio</option>
+        <option value="06">Junho</option>
+        <option value="07">Julho</option>
+        <option value="08">Agosto</option>
+        <option value="09">Setembro</option>
+        <option value="10">Outubro</option>
+        <option value="11">Novembro</option>
+        <option value="12">Dezembro</option>
+      </select>
+      <select id="select-ano" onchange="carregarTreinos()" style="margin-left:8px">
+        <option value="2026">2026</option>
+        <option value="2027">2027</option>
+        <option value="2028">2028</option>
       </select>
     </div>
 
@@ -769,10 +782,12 @@
   const params = new URLSearchParams(window.location.search);
   const modalidade = params.get('modalidade') || 'Todas';
 
-  // Detecta semana atual do mês
-  function semanaAtualDoMes() {
+  // Detecta mês e ano atual
+  function mesAnoAtual() {
     const hoje = new Date();
-    return Math.min(4, Math.ceil(hoje.getDate() / 7));
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const ano = String(hoje.getFullYear());
+    return { mes, ano };
   }
 
   async function get(tabela, filtros) {
@@ -809,20 +824,24 @@
     document.getElementById('index-subtitle').textContent =
       'Selecione o dia para ver o treino completo.';
 
-    // Define semana atual no select
-    const semana = semanaAtualDoMes();
-    document.getElementById('select-semana').value = semana;
+    // Define mês e ano atual nos selects
+    const { mes, ano } = mesAnoAtual();
+    document.getElementById('select-mes').value = mes;
+    document.getElementById('select-ano').value = ano;
 
     carregarTreinos();
   };
 
   async function carregarTreinos() {
-    const semana = document.getElementById('select-semana').value;
+    const mes = document.getElementById('select-mes').value;
+    const ano = document.getElementById('select-ano').value;
     const lista = document.getElementById('dias-list');
     lista.innerHTML = '<div class="loading-state">Carregando treinos...</div>';
 
+    const MESES_NOME = {'01':'Janeiro','02':'Fevereiro','03':'Março','04':'Abril','05':'Maio','06':'Junho','07':'Julho','08':'Agosto','09':'Setembro','10':'Outubro','11':'Novembro','12':'Dezembro'};
+
     try {
-      let filtro = `semana_mes=eq.${semana}&order=dia_semana`;
+      let filtro = `data_aula=gte.${ano}-${mes}-01&data_aula=lte.${ano}-${mes}-31&order=dia_semana`;
       if (modalidade !== 'Todas') {
         filtro += `&modalidade=eq.${encodeURIComponent(modalidade)}`;
       }
@@ -833,7 +852,7 @@
         lista.innerHTML = `
           <div class="empty-state">
             <h3>Nenhum treino cadastrado</h3>
-            <p>Ainda não há treinos cadastrados para a Semana ${semana}.</p>
+            <p>Ainda não há treinos cadastrados para ${MESES_NOME[mes]}/${ano}.</p>
           </div>`;
         return;
       }
@@ -903,7 +922,7 @@
   function renderTreino(t, aquec, blocos) {
     const tags = [
       t.dia_semana ? `<div class="tag">${t.dia_semana}</div>` : '',
-      t.semana_mes ? `<div class="tag">Semana ${t.semana_mes}</div>` : '',
+      t.semana_mes ? `<div class="tag">Treino ${t.semana_mes}</div>` : '',
       t.tempo_total_minutos ? `<div class="tag">⏱ ${t.tempo_total_minutos} min</div>` : '',
     ].filter(Boolean).join('');
 
@@ -1014,9 +1033,11 @@
   (function() {
     const params = new URLSearchParams(window.location.search);
     const mod = params.get('modalidade') || '';
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('ativo'));
     if (mod === 'Run') document.getElementById('nav-run').classList.add('ativo');
-    else if (mod === 'Reshape') { document.getElementById('nav-run').classList.remove('ativo'); document.getElementById('nav-reshape').classList.add('ativo'); }
-    else if (mod.includes('Hit')) { document.getElementById('nav-run').classList.remove('ativo'); document.getElementById('nav-hit').classList.add('ativo'); }
+    else if (mod === 'Reshape') document.getElementById('nav-reshape').classList.add('ativo');
+    else if (mod.includes('Hit')) document.getElementById('nav-hit').classList.add('ativo');
+    else document.getElementById('nav-run').classList.add('ativo');
   })();
   window.addEventListener('load', verificarAuth);
 </script>
@@ -1031,11 +1052,11 @@
     Relatórios
   </a>
   <a class="nav-item ativo" href="visualizar.html?modalidade=Run" id="nav-run">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="6" r="2"/><path d="M20 21l-3-8-3 3-3-3-3 8"/><path d="M4 15l3-8 2 2"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2"/><path d="M15.09 8.26L13 11l2 5"/><path d="M9 18l1-5-2-3"/><path d="M6 12l2-1 2 3 2-3 2 1"/></svg>
     Run
   </a>
   <a class="nav-item" href="visualizar.html?modalidade=Reshape" id="nav-reshape">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2"/><path d="M8 12l4-4 4 4"/><path d="M6 20l6-8 6 8"/><line x1="6" y1="20" x2="18" y2="20"/></svg>
     Reshape
   </a>
   <a class="nav-item" href="visualizar.html?modalidade=Hit+Training" id="nav-hit">
