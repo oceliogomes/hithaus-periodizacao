@@ -28,7 +28,7 @@
     color: var(--text);
     font-family: 'DM Sans', sans-serif;
     min-height: 100vh;
-    padding-bottom: 80px;
+    padding-bottom: 140px;
   }
 
   header {
@@ -374,6 +374,39 @@
     .filtros-grid { grid-template-columns: 1fr; }
   }
 
+  /* NAV BAR INFERIOR */
+  .nav-bottom {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #111;
+    border-top: 1px solid #222;
+    display: flex;
+    align-items: stretch;
+    z-index: 200;
+    height: 64px;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    text-decoration: none;
+    color: #666;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    transition: color 0.2s;
+    border: none;
+    background: none;
+    padding: 0;
+  }
+  .nav-item:hover { color: #999; }
+  .nav-item.ativo { color: #b5ff4d; }
+  .nav-item svg { width: 22px; height: 22px; }
   @media print {
     header, .filtros-card, .tabs, .export-buttons, .resultados-header .btn { display: none !important; }
     body { background: white; color: black; }
@@ -1155,5 +1188,29 @@
 
   window.addEventListener('load', verificarAuth);
 </script>
+<!-- NAV BAR INFERIOR -->
+<nav class="nav-bottom">
+  <a class="nav-item" href="cadastro.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Cadastro
+  </a>
+  <a class="nav-item ativo" href="relatorios.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Relatórios
+  </a>
+  <a class="nav-item" href="visualizar.html?modalidade=Run">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="6" r="2"/><path d="M20 21l-3-8-3 3-3-3-3 8"/><path d="M4 15l3-8 2 2"/></svg>
+    Run
+  </a>
+  <a class="nav-item" href="visualizar.html?modalidade=Reshape">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+    Reshape
+  </a>
+  <a class="nav-item" href="visualizar.html?modalidade=Hit+Training">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    Hit Training
+  </a>
+</nav>
+
 </body>
 </html>
