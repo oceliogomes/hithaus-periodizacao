@@ -842,7 +842,9 @@
     const MESES_NOME = {'01':'Janeiro','02':'Fevereiro','03':'Março','04':'Abril','05':'Maio','06':'Junho','07':'Julho','08':'Agosto','09':'Setembro','10':'Outubro','11':'Novembro','12':'Dezembro'};
 
     try {
-      let filtro = `data_aula=gte.${ano}-${mes}-01&data_aula=lte.${ano}-${mes}-31&order=dia_semana`;
+      const primeiroDia = `${ano}-${mes}-01`;
+      const ultimoDia = new Date(parseInt(ano), parseInt(mes), 0).toISOString().split('T')[0];
+      let filtro = `data_aula=gte.${primeiroDia}&data_aula=lte.${ultimoDia}&order=dia_semana`;
       if (modalidade !== 'Todas') {
         filtro += `&modalidade=eq.${encodeURIComponent(modalidade)}`;
       }
