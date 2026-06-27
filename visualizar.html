@@ -829,6 +829,7 @@
     document.getElementById('select-mes').value = mes;
     document.getElementById('select-ano').value = ano;
 
+    destacarNavAtivo();
     carregarTreinos();
   };
 
@@ -1030,15 +1031,13 @@
   }
 
   // Destacar nav item ativo baseado na modalidade
-  (function() {
-    const params = new URLSearchParams(window.location.search);
-    const mod = params.get('modalidade') || '';
+  function destacarNavAtivo() {
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('ativo'));
-    if (mod === 'Run') document.getElementById('nav-run').classList.add('ativo');
-    else if (mod === 'Reshape') document.getElementById('nav-reshape').classList.add('ativo');
-    else if (mod.includes('Hit')) document.getElementById('nav-hit').classList.add('ativo');
+    if (modalidade === 'Run') document.getElementById('nav-run').classList.add('ativo');
+    else if (modalidade === 'Reshape') document.getElementById('nav-reshape').classList.add('ativo');
+    else if (modalidade.includes('Hit')) document.getElementById('nav-hit').classList.add('ativo');
     else document.getElementById('nav-run').classList.add('ativo');
-  })();
+  }
   window.addEventListener('load', verificarAuth);
 </script>
 <!-- NAV BAR INFERIOR -->
@@ -1051,7 +1050,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
     Relatórios
   </a>
-  <a class="nav-item ativo" href="visualizar.html?modalidade=Run" id="nav-run">
+  <a class="nav-item" href="visualizar.html?modalidade=Run" id="nav-run">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2"/><path d="M15.09 8.26L13 11l2 5"/><path d="M9 18l1-5-2-3"/><path d="M6 12l2-1 2 3 2-3 2 1"/></svg>
     Run
   </a>
