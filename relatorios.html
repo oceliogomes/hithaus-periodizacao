@@ -451,9 +451,7 @@
         <label>Modalidade</label>
         <select id="f-modalidade" onchange="aplicarFiltros()">
           <option value="">Todas</option>
-          <option>Bike</option>
           <option>Run</option>
-          <option>Boxe</option>
           <option>Reshape</option>
           <option>Hit Training</option>
         </select>
@@ -1178,7 +1176,7 @@
       XLSX.writeFile(wb, `HitHaus_Logs_${data}.xlsx`);
 
     } catch(e) {
-      alert('Erro ao exportar logs: ' + e.message);
+      console.error('Erro ao exportar logs:', e.message);
     }
   }
 
