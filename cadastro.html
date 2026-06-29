@@ -1905,7 +1905,6 @@
       document.getElementById('semana_mes').value = t.semana_mes || '';
       document.getElementById('foco_muscular').value = t.foco_muscular || '';
       document.getElementById('mentor_responsavel').value = t.mentor_responsavel || '';
-      document.getElementById('materials').value = t.equipamentos || '';
       document.getElementById('alongamento').value = t.alongamento || '';
       document.getElementById('observacoes_gerais').value = t.observacoes_gerais || '';
       if (t.data_aula) {
@@ -1913,6 +1912,10 @@
         document.getElementById('data_ano').value = partes[0] || '';
         document.getElementById('data_mes').value = partes[1] || '';
       }
+      // Preenche materials após os outros campos para evitar sobrescrita
+      setTimeout(() => {
+        document.getElementById('materials').value = t.equipamentos || '';
+      }, 100);
 
       // Preenche aquecimento
       if (aquecimentos[0]) {
