@@ -902,6 +902,7 @@
     tbody.innerHTML = lista.map(t => {
       const MESES = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
       const mesAno = t.data_aula ? `${MESES[parseInt(t.data_aula.substring(5,7))]}/${t.data_aula.substring(0,4)}` : '—';
+      const dataCriacao = t.criado_em ? new Date(t.criado_em).toLocaleDateString('pt-BR') : '—';
       return `<tr>
         <td><span class="badge badge-modalidade">${t.modalidade}</span></td>
         <td style="white-space:nowrap">${t.dia_semana}</td>
@@ -912,7 +913,7 @@
         <td style="text-align:center">${t.num_blocos}</td>
         <td style="text-align:center">${t.num_exercicios}</td>
         <td style="font-weight:600">${mesAno}</td>
-        <td style="font-size:12px;color:var(--text-muted)">${data}</td>
+        <td style="font-size:12px;color:var(--text-muted)">${dataCriacao}</td>
       </tr>`;
     }).join('');
   }
