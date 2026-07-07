@@ -1,0 +1,39 @@
+{
+  "name": "Hit Haus — Periodização",
+  "short_name": "Hit Haus",
+  "description": "Sistema de periodização de treinos Hit Haus",
+  "start_url": "/hithaus-periodizacao/cadastro.html",
+  "display": "standalone",
+  "background_color": "#0A0A0A",
+  "theme_color": "#b5ff4d",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://hithaus.com.br/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Cadastro",
+      "url": "/hithaus-periodizacao/cadastro.html",
+      "description": "Cadastrar treinos"
+    },
+    {
+      "name": "Run",
+      "url": "/hithaus-periodizacao/visualizar.html?modalidade=Run",
+      "description": "Ver treino de Run"
+    },
+    {
+      "name": "Reshape",
+      "url": "/hithaus-periodizacao/visualizar.html?modalidade=Reshape",
+      "description": "Ver treino de Reshape"
+    },
+    {
+      "name": "Hit Training",
+      "url": "/hithaus-periodizacao/visualizar.html?modalidade=Hit+Training",
+      "description": "Ver treino de Hit Training"
+    }
+  ]
+}
