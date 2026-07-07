@@ -34,6 +34,15 @@ main{padding:32px;max-width:1400px;margin:0 auto}
 .cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
 .card{background:var(--cinza-escuro);border:1px solid var(--cinza-borda);border-radius:12px;padding:24px;transition:border-color .2s}
 .card:hover{border-color:var(--verde)}
+.card-clicavel{cursor:pointer}
+.card-clicavel:hover{background:#1a1a1a}
+.tabela-auditoria{width:100%;border-collapse:collapse;font-size:13px}
+.tabela-auditoria th{text-align:left;color:var(--branco-suave);font-weight:500;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid var(--cinza-borda)}
+.tabela-auditoria td{padding:10px 12px;border-bottom:1px solid #1a1a1a}
+.tabela-auditoria tr:hover td{background:#161616}
+.tabela-auditoria a{color:var(--verde);text-decoration:none}
+.tabela-auditoria a:hover{text-decoration:underline}
+.nota-pill{display:inline-block;padding:2px 10px;border-radius:12px;font-weight:600;font-size:12px}
 .card-label{font-size:11px;font-weight:500;letter-spacing:1.5px;color:var(--branco-suave);text-transform:uppercase;margin-bottom:12px}
 .card-valor{font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:1px;line-height:1;color:var(--branco)}
 .card-valor.destaque{color:var(--verde)}
@@ -86,15 +95,12 @@ canvas{width:100%!important}
       <select id="sel-mes">
         <option value="01">Janeiro</option><option value="02">Fevereiro</option>
         <option value="03">Março</option><option value="04">Abril</option>
-        <option value="05">Maio</option><option value="06" selected>Junho</option>
+        <option value="05">Maio</option><option value="06">Junho</option>
         <option value="07">Julho</option><option value="08">Agosto</option>
         <option value="09">Setembro</option><option value="10">Outubro</option>
         <option value="11">Novembro</option><option value="12">Dezembro</option>
       </select>
-      <select id="sel-ano">
-        <option value="2025">2025</option>
-        <option value="2026" selected>2026</option>
-      </select>
+      <select id="sel-ano"></select>
       <button class="btn-filtrar" id="btn-atualizar">Atualizar</button>
     </div>
   </div>
@@ -135,16 +141,23 @@ canvas{width:100%!important}
         <div class="grid-2">
           <div>
             <div class="cards-grid" style="grid-template-columns:1fr 1fr;margin-bottom:16px">
-              <div class="card"><div class="card-label">Nota Média</div><div class="card-valor destaque" id="nota-media">—</div><div class="card-sub">de 0 a 10</div></div>
-              <div class="card"><div class="card-label">Avaliações</div><div class="card-valor" id="total-avaliacoes">0</div><div class="card-sub">respondidas</div></div>
-              <div class="card"><div class="card-label">Taxa de Resposta</div><div class="card-valor" id="taxa-resposta">0%</div><div class="card-sub">do total enviado</div></div>
-              <div class="card"><div class="card-label">Promotores</div><div class="card-valor destaque" id="promotores">0</div><div class="card-sub">nota 9 ou 10</div></div>
+              <div class="card card-clicavel" id="card-nota-media"><div class="card-label">Nota Média</div><div class="card-valor destaque" id="nota-media">—</div><div class="card-sub">de 0 a 10</div></div>
+              <div class="card card-clicavel" id="card-avaliacoes"><div class="card-label">Avaliações</div><div class="card-valor" id="total-avaliacoes">0</div><div class="card-sub">respondidas</div></div>
+              <div class="card card-clicavel" id="card-taxa-resposta"><div class="card-label">Taxa de Resposta</div><div class="card-valor" id="taxa-resposta">0%</div><div class="card-sub">do total enviado</div></div>
+              <div class="card card-clicavel" id="card-promotores"><div class="card-label">Promotores</div><div class="card-valor destaque" id="promotores">0</div><div class="card-sub">nota 9 ou 10</div></div>
             </div>
           </div>
           <div class="grafico-container">
-            <div class="grafico-titulo">Distribuição das notas</div>
+            <div class="grafico-titulo">Distribuição das notas (clique numa barra para ver quem votou)</div>
             <canvas id="grafico-notas" height="160"></canvas>
           </div>
+        </div>
+        <div id="lista-auditoria" class="grafico-container" style="margin-top:16px;display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div class="grafico-titulo" id="lista-auditoria-titulo" style="margin-bottom:0">Lista</div>
+            <button class="btn-logout" id="btn-fechar-lista">Fechar</button>
+          </div>
+          <div id="lista-auditoria-conteudo"></div>
         </div>
       </div>
 
@@ -162,6 +175,8 @@ var EMAILS_OK = ['oceliodiagonal@gmail.com'];
 var grafA = null;
 var grafN = null;
 var grafH = null;
+var csatEnviadas = [];
+var csatRespondidas = [];
 
 document.getElementById('btn-login').addEventListener('click', function() {
   var redirectTo = window.location.href;
@@ -189,7 +204,27 @@ async function qBia(tabela, params) {
   return Array.isArray(data) ? data : [];
 }
 
+function definirPeriodoAtual() {
+  var hoje = new Date();
+  var anoAtual = hoje.getFullYear();
+  var mesAtual = String(hoje.getMonth() + 1).padStart(2, '0');
+
+  var selAno = document.getElementById('sel-ano');
+  selAno.innerHTML = '';
+  for (var a = 2025; a <= anoAtual + 1; a++) {
+    var opt = document.createElement('option');
+    opt.value = String(a);
+    opt.textContent = String(a);
+    if (a === anoAtual) opt.selected = true;
+    selAno.appendChild(opt);
+  }
+
+  document.getElementById('sel-mes').value = mesAtual;
+}
+
 async function init() {
+  definirPeriodoAtual();
+
   var hash = window.location.hash;
   if (hash && hash.includes('access_token')) {
     var params = new URLSearchParams(hash.substring(1));
@@ -382,6 +417,10 @@ async function carregarCSAT(inicio, fim) {
   var media = totalR > 0 ? (soma / totalR).toFixed(1) : null;
   var promotores = respondidas.filter(function(r) { return r.nota >= 9; }).length;
 
+  csatEnviadas = enviadas;
+  csatRespondidas = respondidas;
+  esconderListaAuditoria();
+
   document.getElementById('nota-media').textContent = media || '—';
   document.getElementById('total-avaliacoes').textContent = totalR;
   document.getElementById('taxa-resposta').textContent = taxa + '%';
@@ -402,6 +441,12 @@ async function carregarCSAT(inicio, fim) {
       }]
     },
     options: {
+      onClick: function(evt, elementos) {
+        if (!elementos.length) return;
+        var nota = elementos[0].index;
+        var filtrado = csatRespondidas.filter(function(r) { return r.nota === nota; });
+        mostrarListaAuditoria('Quem deu nota ' + nota, filtrado);
+      },
       plugins: {legend:{display:false}},
       scales: {
         x: {ticks:{color:'#888',font:{size:11}}, grid:{color:'#1e1e1e'}},
@@ -410,6 +455,68 @@ async function carregarCSAT(inicio, fim) {
     }
   });
 }
+
+function formatarDataHora(iso) {
+  var d = new Date(iso);
+  return d.toLocaleString('pt-BR', {timeZone:'America/Sao_Paulo', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+}
+
+function corNota(nota) {
+  if (nota >= 9) return '#00FF7F';
+  if (nota >= 7) return '#00cc66';
+  if (nota >= 5) return '#888';
+  return '#ff4444';
+}
+
+function mostrarListaAuditoria(titulo, lista) {
+  var ordenada = lista.slice().sort(function(a, b) {
+    return new Date(b.data_resposta || b.data_envio) - new Date(a.data_resposta || a.data_envio);
+  });
+
+  var html = '<table class="tabela-auditoria"><thead><tr><th>Nome</th><th>Nota</th><th>Respondeu em</th><th>Conversa</th></tr></thead><tbody>';
+  if (ordenada.length === 0) {
+    html += '<tr><td colspan="4" style="color:#555;text-align:center;padding:24px">Nenhum registro encontrado nesse filtro.</td></tr>';
+  }
+  ordenada.forEach(function(r) {
+    var linkConversa = r.conversation_id
+      ? '<a href="https://oceaniccarp-chatwoot.cloudfy.live/app/accounts/1/conversations/' + r.conversation_id + '" target="_blank">abrir ↗</a>'
+      : '—';
+    var notaTexto = (r.nota === null || r.nota === undefined) ? '—' : r.nota;
+    var corBg = (r.nota === null || r.nota === undefined) ? '#333' : corNota(r.nota);
+    html += '<tr>'
+      + '<td>' + (r.nome || 'Sem nome') + '</td>'
+      + '<td><span class="nota-pill" style="background:' + corBg + '22;color:' + corBg + '">' + notaTexto + '</span></td>'
+      + '<td>' + (r.data_resposta ? formatarDataHora(r.data_resposta) : (r.data_envio ? 'não respondeu (enviado ' + formatarDataHora(r.data_envio) + ')' : '—')) + '</td>'
+      + '<td>' + linkConversa + '</td>'
+      + '</tr>';
+  });
+  html += '</tbody></table>';
+
+  document.getElementById('lista-auditoria-titulo').textContent = titulo + ' (' + lista.length + ')';
+  document.getElementById('lista-auditoria-conteudo').innerHTML = html;
+  document.getElementById('lista-auditoria').style.display = 'block';
+  document.getElementById('lista-auditoria').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function esconderListaAuditoria() {
+  document.getElementById('lista-auditoria').style.display = 'none';
+}
+
+document.getElementById('card-nota-media').addEventListener('click', function() {
+  mostrarListaAuditoria('Todas as avaliações respondidas', csatRespondidas);
+});
+document.getElementById('card-avaliacoes').addEventListener('click', function() {
+  mostrarListaAuditoria('Todas as avaliações respondidas', csatRespondidas);
+});
+document.getElementById('card-taxa-resposta').addEventListener('click', function() {
+  var naoRespondidas = csatEnviadas.filter(function(r) { return r.status !== 'respondido'; });
+  mostrarListaAuditoria('Pesquisas enviadas sem resposta registrada', naoRespondidas);
+});
+document.getElementById('card-promotores').addEventListener('click', function() {
+  var promotoresLista = csatRespondidas.filter(function(r) { return r.nota >= 9; });
+  mostrarListaAuditoria('Promotores (nota 9 ou 10)', promotoresLista);
+});
+document.getElementById('btn-fechar-lista').addEventListener('click', esconderListaAuditoria);
 
 init();
 </script>
