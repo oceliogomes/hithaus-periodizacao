@@ -2,7 +2,11 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#b5ff4d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hit Haus — Cadastro de Treino</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -895,6 +899,18 @@
             </div>
           </div>
         </div>
+
+        <div class="grid-2" style="margin-bottom:0">
+          <div class="field">
+            <label>📅 Início da Visibilidade <span class="required">*</span></label>
+            <input type="date" id="data_inicio" required>
+          </div>
+          <div class="field">
+            <label>⏰ Expiração da Visibilidade <span class="required">*</span></label>
+            <input type="date" id="data_expiracao" required>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -1135,6 +1151,10 @@
         </div>
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:12px;">Exercícios</div>
         <div class="exercicio-list sortable" id="exercicios-bloco-${num}"></div>
+        <div class="field" style="margin-top:12px">
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted)">Observação do Bloco <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+          <input type="text" id="b${num}_obs" placeholder="Ex: Foco na execução lenta, sem compensações">
+        </div>
         <button type="button" class="btn btn-outline btn-add-ex" onclick="adicionarExercicio(${num})">
           + Adicionar Exercício
         </button>
@@ -1559,6 +1579,11 @@
     const data_ano = document.getElementById('data_ano').value;
     const data_aula = (data_mes && data_ano) ? `${data_ano}-${data_mes}-01` : '';
     if (!data_aula) { showToast('Campo obrigatório não preenchido: Mês/Ano.', 'error'); return; }
+    const data_inicio = document.getElementById('data_inicio').value;
+    const data_expiracao = document.getElementById('data_expiracao').value;
+    if (!data_inicio) { showToast('Campo obrigatório não preenchido: Início da Visibilidade.', 'error'); return; }
+    if (!data_expiracao) { showToast('Campo obrigatório não preenchido: Expiração da Visibilidade.', 'error'); return; }
+    if (data_expiracao <= data_inicio) { showToast('A data de expiração deve ser posterior à data de início.', 'error'); return; }
 
     // Valida se ao menos um bloco tem séries e exercício preenchidos
     const blocoEls = document.querySelectorAll('.bloco-wrapper');
@@ -1600,6 +1625,8 @@
         foco_muscular,
         mentor_responsavel,
         data_aula,
+        data_inicio,
+        data_expiracao,
         equipamentos: document.getElementById('materials').value.trim() || null,
         tempo_total_minutos: null,
         alongamento: document.getElementById('alongamento').value.trim() || null,
@@ -1659,6 +1686,7 @@
           numero_series: series,
           tempo_estimado_minutos: parseInt(document.getElementById(`b${num}_tempo`)?.value) || null,
           descanso_entre_series: document.getElementById(`b${num}_descanso`)?.value.trim() || null,
+          observacao_bloco: document.getElementById(`b${num}_obs`)?.value.trim() || null,
         };
 
         const resBloco = await fetch(`${SUPABASE_URL}/rest/v1/blocos`, {
@@ -1913,6 +1941,8 @@
         document.getElementById('data_ano').value = partes[0] || '';
         document.getElementById('data_mes').value = partes[1] || '';
       }
+      document.getElementById('data_inicio').value = t.data_inicio || '';
+      document.getElementById('data_expiracao').value = t.data_expiracao || '';
 
       // Preenche aquecimento
       if (aquecimentos[0]) {
@@ -1932,6 +1962,7 @@
         document.getElementById(`b${num}_series`).value = bloco.numero_series || '';
         document.getElementById(`b${num}_tempo`).value = bloco.tempo_estimado_minutos || '';
         document.getElementById(`b${num}_descanso`).value = bloco.descanso_entre_series || '';
+        document.getElementById(`b${num}_obs`).value = bloco.observacao_bloco || '';
 
         // Busca exercícios do bloco
         const exercicios = await fetch(`${SUPABASE_URL}/rest/v1/exercicios?bloco_id=eq.${bloco.id}&order=ordem`, {
