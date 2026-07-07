@@ -1888,6 +1888,7 @@
   async function carregarTreinoParaEdicao(treinoId) {
     showToast('Carregando treino para edição...', 'success');
     treinoEditandoId = treinoId;
+    window._carregandoEdicao = true;
 
     try {
       const [treinos, aquecimentos, blocos] = await Promise.all([
@@ -1964,8 +1965,13 @@
       document.getElementById('modo-edicao-bar').classList.add('ativo');
       document.getElementById('btn-label').textContent = 'SALVAR ALTERAÇÕES';
 
-      // Preenche materials DEPOIS dos blocos para evitar sobrescrita
-      document.getElementById('materials').value = t.equipamentos || '';
+      // Preenche materials DEPOIS dos blocos com proteção total
+      const _equipVal = t.equipamentos || '';
+      const _matEl = document.getElementById('materials');
+      _matEl.value = _equipVal;
+      setTimeout(() => { document.getElementById('materials').value = _equipVal; }, 200);
+      setTimeout(() => { document.getElementById('materials').value = _equipVal; }, 500);
+      window._carregandoEdicao = false;
 
       // Scrolla para o formulário
       document.getElementById('formTreino').scrollIntoView({ behavior: 'smooth' });
