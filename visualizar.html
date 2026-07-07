@@ -2,7 +2,11 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#b5ff4d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hit Haus — Treinos da Semana</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -555,6 +559,18 @@
     margin-top: 8px;
   }
   .video-expandido.aberto { display: block; }
+  /* OBSERVAÇÃO DO BLOCO */
+  .bloco-obs-mentor {
+    background: #1a2a1a;
+    border-left: 3px solid var(--green);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: #ccc;
+  }
+  .bloco-obs-mentor strong { color: var(--green); margin-right: 4px; }
+
   /* RODAPÉ DO TREINO */
   .rodape-text {
     font-size: 15px;
@@ -849,13 +865,20 @@
         filtro += `&modalidade=eq.${encodeURIComponent(modalidade)}`;
       }
 
-      const treinos = await get('treinos', filtro);
+      let treinos = await get('treinos', filtro);
+
+      // Filtrar por visibilidade (data_inicio <= hoje <= data_expiracao)
+      const hoje = new Date().toISOString().split('T')[0];
+      treinos = treinos.filter(t => {
+        if (!t.data_inicio || !t.data_expiracao) return true; // sem data = sempre visível
+        return hoje >= t.data_inicio && hoje <= t.data_expiracao;
+      });
 
       if (!treinos.length) {
         lista.innerHTML = `
           <div class="empty-state">
-            <h3>Nenhum treino cadastrado</h3>
-            <p>Ainda não há treinos cadastrados para ${MESES_NOME[mes]}/${ano}.</p>
+            <h3>Nenhum treino disponível</h3>
+            <p>Não há treinos ativos para ${MESES_NOME[mes]}/${ano}.</p>
           </div>`;
         return;
       }
@@ -982,7 +1005,10 @@
               ${b.tempo_estimado_minutos ? `<span>⏱ ${b.tempo_estimado_minutos} min</span>` : ''}
             </div>
           </div>
-          <div class="treino-section-body">${exHTML}</div>
+          <div class="treino-section-body">
+            ${b.observacao_bloco ? `<div class="bloco-obs-mentor">📋 <strong>Observação:</strong> ${b.observacao_bloco}</div>` : ''}
+            ${exHTML}
+          </div>
         </div>`;
     }).join('');
 
