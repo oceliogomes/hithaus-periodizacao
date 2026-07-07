@@ -800,9 +800,9 @@
       <!-- FILTRO DE PERÍODO -->
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
         <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted)">Período:</span>
-        <button class="chip-semana ativo" onclick="filtrarPeriodo('todos', this)">Todos</button>
-        <button class="chip-semana" onclick="filtrarPeriodo('mes', this)">Este mês</button>
+        <button class="chip-semana ativo" onclick="filtrarPeriodo('mes', this)">Este mês</button>
         <button class="chip-semana" onclick="filtrarPeriodo('mes_anterior', this)">Mês anterior</button>
+        <button class="chip-semana" onclick="filtrarPeriodo('todos', this)">Todos</button>
       </div>
 
       <!-- RESUMO DE DISTRIBUIÇÃO -->
@@ -1772,7 +1772,7 @@
     arrow.classList.toggle('aberto', listaVisivel);
   }
 
-  let periodoFiltroAtual = 'todos';
+  let periodoFiltroAtual = 'mes';
   let todosTreinosCache = [];
 
   function filtrarPeriodo(periodo, btn) {
