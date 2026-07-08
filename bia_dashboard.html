@@ -468,32 +468,65 @@ function corNota(nota) {
   return '#ff4444';
 }
 
-function mostrarListaAuditoria(titulo, lista) {
-  var ordenada = lista.slice().sort(function(a, b) {
-    return new Date(b.data_resposta || b.data_envio) - new Date(a.data_resposta || a.data_envio);
-  });
+var listaAuditoriaCompleta = [];
+var listaAuditoriaExibidas = 0;
+var LISTA_PAGINA_TAMANHO = 20;
 
-  var html = '<table class="tabela-auditoria"><thead><tr><th>Nome</th><th>Nota</th><th>Respondeu em</th><th>Conversa</th></tr></thead><tbody>';
-  if (ordenada.length === 0) {
-    html += '<tr><td colspan="4" style="color:#555;text-align:center;padding:24px">Nenhum registro encontrado nesse filtro.</td></tr>';
-  }
-  ordenada.forEach(function(r) {
+function linhaAuditoria(r) {
+  try {
     var linkConversa = r.conversation_id
       ? '<a href="https://oceaniccarp-chatwoot.cloudfy.live/app/accounts/1/conversations/' + r.conversation_id + '" target="_blank">abrir ↗</a>'
       : '—';
     var notaTexto = (r.nota === null || r.nota === undefined) ? '—' : r.nota;
     var corBg = (r.nota === null || r.nota === undefined) ? '#333' : corNota(r.nota);
-    html += '<tr>'
+    var quando = '—';
+    try {
+      quando = r.data_resposta ? formatarDataHora(r.data_resposta) : (r.data_envio ? 'não respondeu (enviado ' + formatarDataHora(r.data_envio) + ')' : '—');
+    } catch (eData) { quando = '(data inválida)'; }
+    return '<tr>'
       + '<td>' + (r.nome || 'Sem nome') + '</td>'
       + '<td><span class="nota-pill" style="background:' + corBg + '22;color:' + corBg + '">' + notaTexto + '</span></td>'
-      + '<td>' + (r.data_resposta ? formatarDataHora(r.data_resposta) : (r.data_envio ? 'não respondeu (enviado ' + formatarDataHora(r.data_envio) + ')' : '—')) + '</td>'
+      + '<td>' + quando + '</td>'
       + '<td>' + linkConversa + '</td>'
       + '</tr>';
+  } catch (e) {
+    console.warn('Registro com problema ao renderizar, mostrando mesmo assim:', r, e);
+    return '<tr><td colspan="4" style="color:#ff8888">' + (r.nome || r.telefone || 'Registro #' + r.id || 'desconhecido') + ' — erro ao exibir detalhes (veja console)</td></tr>';
+  }
+}
+
+function renderizarProximoLote() {
+  var lote = listaAuditoriaCompleta.slice(listaAuditoriaExibidas, listaAuditoriaExibidas + LISTA_PAGINA_TAMANHO);
+  var tbody = document.getElementById('lista-auditoria-tbody');
+  lote.forEach(function(r) { tbody.insertAdjacentHTML('beforeend', linhaAuditoria(r)); });
+  listaAuditoriaExibidas += lote.length;
+
+  var btn = document.getElementById('btn-mostrar-mais');
+  var restantes = listaAuditoriaCompleta.length - listaAuditoriaExibidas;
+  if (restantes > 0) {
+    btn.style.display = 'block';
+    btn.textContent = 'Mostrar mais (' + restantes + ' restantes)';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+function mostrarListaAuditoria(titulo, lista) {
+  listaAuditoriaCompleta = lista.slice().sort(function(a, b) {
+    return new Date(b.data_resposta || b.data_envio) - new Date(a.data_resposta || a.data_envio);
   });
-  html += '</tbody></table>';
+  listaAuditoriaExibidas = 0;
+
+  var html = '<table class="tabela-auditoria"><thead><tr><th>Nome</th><th>Nota</th><th>Respondeu em</th><th>Conversa</th></tr></thead><tbody id="lista-auditoria-tbody">';
+  if (listaAuditoriaCompleta.length === 0) {
+    html += '<tr><td colspan="4" style="color:#555;text-align:center;padding:24px">Nenhum registro encontrado nesse filtro.</td></tr>';
+  }
+  html += '</tbody></table><button id="btn-mostrar-mais" class="btn-logout" style="display:none;margin-top:16px;width:100%">Mostrar mais</button>';
 
   document.getElementById('lista-auditoria-titulo').textContent = titulo + ' (' + lista.length + ')';
   document.getElementById('lista-auditoria-conteudo').innerHTML = html;
+  document.getElementById('btn-mostrar-mais').addEventListener('click', renderizarProximoLote);
+  renderizarProximoLote();
   document.getElementById('lista-auditoria').style.display = 'block';
   document.getElementById('lista-auditoria').scrollIntoView({behavior:'smooth', block:'nearest'});
 }
