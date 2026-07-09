@@ -556,6 +556,23 @@
   /* LISTA DE TREINOS ANTERIORES */
   .treinos-lista { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
 
+  .treino-item-ativo {
+    border-color: #b5ff4d !important;
+    background: #0d1a00 !important;
+  }
+  .treino-badge-ativo {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #0d1a00;
+    border: 1px solid #b5ff4d;
+    border-radius: 12px;
+    padding: 3px 10px;
+    font-size: 11px;
+    color: #b5ff4d;
+    font-weight: 600;
+    margin-top: 6px;
+  }
   .treino-item-futuro {
     border-color: #b8860b !important;
     background: #1a1500 !important;
@@ -2436,6 +2453,11 @@
           const dataExpFormatada = new Date(t.data_expiracao + 'T12:00:00').toLocaleDateString('pt-BR');
           statusClass = 'treino-item-expirado';
           statusBadge = `<div class="treino-badge-expirado">🔒 Expirado em: ${dataExpFormatada}</div>`;
+        } else {
+          // Treino ativo
+          const dataExpAtivo = new Date(t.data_expiracao + 'T12:00:00').toLocaleDateString('pt-BR');
+          statusClass = 'treino-item-ativo';
+          statusBadge = `<div class="treino-badge-ativo">✅ Visível até: ${dataExpAtivo}</div>`;
         }
       }
 
@@ -3217,6 +3239,23 @@
   /* LISTA DE TREINOS ANTERIORES */
   .treinos-lista { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
 
+  .treino-item-ativo {
+    border-color: #b5ff4d !important;
+    background: #0d1a00 !important;
+  }
+  .treino-badge-ativo {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #0d1a00;
+    border: 1px solid #b5ff4d;
+    border-radius: 12px;
+    padding: 3px 10px;
+    font-size: 11px;
+    color: #b5ff4d;
+    font-weight: 600;
+    margin-top: 6px;
+  }
   .treino-item-futuro {
     border-color: #b8860b !important;
     background: #1a1500 !important;
@@ -5083,17 +5122,23 @@
       let btnPreview = '';
 
       if (t.data_inicio && t.data_expiracao) {
-        if (hoje < t.data_inicio) {
+        const hojeLocal = new Date().toISOString().split('T')[0];
+        if (hojeLocal < t.data_inicio) {
           // Treino futuro
           const dataInicioFormatada = new Date(t.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR');
           statusClass = 'treino-item-futuro';
           statusBadge = `<div class="treino-badge-futuro">⏳ Visível em: ${dataInicioFormatada}</div>`;
           btnPreview = `<button class="btn-preview-futuro" onclick="event.stopPropagation(); abrirPreviewTreino('${t.id}')">👁 Preview</button>`;
-        } else if (hoje > t.data_expiracao) {
+        } else if (hojeLocal > t.data_expiracao) {
           // Treino expirado
           const dataExpFormatada = new Date(t.data_expiracao + 'T12:00:00').toLocaleDateString('pt-BR');
           statusClass = 'treino-item-expirado';
           statusBadge = `<div class="treino-badge-expirado">🔒 Expirado em: ${dataExpFormatada}</div>`;
+        } else {
+          // Treino ativo
+          const dataExpAtivo2 = new Date(t.data_expiracao + 'T12:00:00').toLocaleDateString('pt-BR');
+          statusClass = 'treino-item-ativo';
+          statusBadge = `<div class="treino-badge-ativo">✅ Visível até: ${dataExpAtivo2}</div>`;
         }
       }
 
