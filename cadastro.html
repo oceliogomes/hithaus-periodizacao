@@ -544,6 +544,56 @@
   /* LISTA DE TREINOS ANTERIORES */
   .treinos-lista { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
 
+  .treino-item-futuro {
+    border-color: #b8860b !important;
+    background: #1a1500 !important;
+  }
+  .treino-item-expirado {
+    border-color: #333 !important;
+    opacity: 0.6;
+  }
+  .treino-badge-futuro {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #2a1f00;
+    border: 1px solid #b8860b;
+    border-radius: 12px;
+    padding: 3px 10px;
+    font-size: 11px;
+    color: #f0c040;
+    font-weight: 600;
+    margin-top: 6px;
+  }
+  .treino-badge-expirado {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 3px 10px;
+    font-size: 11px;
+    color: #555;
+    font-weight: 600;
+    margin-top: 6px;
+  }
+  .btn-preview-futuro {
+    background: transparent;
+    border: 1px solid #b8860b;
+    color: #f0c040;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-preview-futuro:hover {
+    background: #b8860b;
+    color: #000;
+  }
+
   .treino-item {
     background: var(--card);
     border: 1px solid var(--border);
@@ -1292,6 +1342,36 @@
   // ========================
   // PRÉ-VISUALIZAÇÃO DO TREINO
   // ========================
+  // Preview de treino JÁ SALVO (futuro)
+  async function abrirPreviewTreino(treinoId) {
+    document.getElementById('preview-content').innerHTML = '<div style="text-align:center;padding:40px;color:#666">Carregando...</div>';
+    document.getElementById('modal-preview').classList.add('aberto');
+    document.body.style.overflow = 'hidden';
+
+    try {
+      const headers = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` };
+      const [treinos, aquecimentos, blocos] = await Promise.all([
+        fetch(`${SUPABASE_URL}/rest/v1/treinos?id=eq.${treinoId}`, { headers }).then(r => r.json()),
+        fetch(`${SUPABASE_URL}/rest/v1/aquecimento?treino_id=eq.${treinoId}`, { headers }).then(r => r.json()),
+        fetch(`${SUPABASE_URL}/rest/v1/blocos?treino_id=eq.${treinoId}&order=numero_bloco`, { headers }).then(r => r.json()),
+      ]);
+
+      const t = treinos[0];
+      const aquec = aquecimentos[0] || null;
+
+      const blocosComEx = await Promise.all(blocos.map(async b => {
+        const exs = await fetch(`${SUPABASE_URL}/rest/v1/exercicios?bloco_id=eq.${b.id}&order=ordem`, { headers }).then(r => r.json());
+        return { ...b, exercicios: exs };
+      }));
+
+      const html = gerarPreviewHTMLFromData(t, aquec, blocosComEx);
+      document.getElementById('preview-content').innerHTML = html;
+    } catch(e) {
+      document.getElementById('preview-content').innerHTML = '<div style="text-align:center;padding:40px;color:#666">Erro ao carregar treino.</div>';
+    }
+  }
+
+  // Preview do treino sendo editado (em tempo real)
   function abrirPreview() {
     const html = gerarPreviewHTML();
     document.getElementById('preview-content').innerHTML = html;
@@ -1315,7 +1395,8 @@
     return m ? m[1] : null;
   }
 
-  function gerarPreviewHTML() {
+  function gerarPreviewHTML() { return gerarPreviewHTMLFromForm(); }
+  function gerarPreviewHTMLFromForm() {
     const modalidade = document.getElementById('modalidade').value || '—';
     const dia_semana = document.getElementById('dia_semana').value || '—';
     const foco = document.getElementById('foco_muscular').value || '—';
@@ -1441,6 +1522,99 @@
       ${blocosHTML || '<div style="color:#444;text-align:center;padding:20px;font-size:13px">Nenhum bloco preenchido ainda.</div>'}
       ${rodapeHTML}
       ${mentor ? `<div class="prev-mentor">Treino criado por ${mentor} · Hit Haus</div>` : ''}
+    `;
+  }
+
+
+  function gerarPreviewHTMLFromData(t, aquec, blocos) {
+    const MESES = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const mesAno = t.data_aula ? `${MESES[parseInt(t.data_aula.substring(5,7))]}/${t.data_aula.substring(0,4)}` : '';
+
+    const tags = [
+      t.dia_semana ? `<div class="prev-tag">${t.dia_semana}</div>` : '',
+      t.semana_mes ? `<div class="prev-tag">Treino ${t.semana_mes}</div>` : '',
+      mesAno ? `<div class="prev-tag">${mesAno}</div>` : '',
+    ].filter(Boolean).join('');
+
+    const aquecHTML = aquec ? `
+      <div class="prev-section">
+        <div class="prev-section-header">
+          <div class="prev-section-num outline">A</div>
+          <span class="prev-section-title">AQUECIMENTO</span>
+          ${aquec.tempo_estimado_minutos ? `<div class="prev-section-meta"><span>⏱ ${aquec.tempo_estimado_minutos} min</span></div>` : ''}
+        </div>
+        <div class="prev-section-body">
+          <div class="prev-rodape-text">${aquec.descricao}</div>
+        </div>
+      </div>` : '';
+
+    const blocosHTML = blocos.map((b, i) => {
+      const exHTML = b.exercicios.map((ex, j) => {
+        const vidId = youtubeIdPreview(ex.link_youtube);
+        return `
+          <div class="prev-ex-item">
+            <div class="prev-ex-header">
+              <div class="prev-ex-num">${j + 1}</div>
+              <span class="prev-ex-nome">${ex.nome}</span>
+            </div>
+            <div class="prev-chips">
+              ${ex.equipamento ? `<div class="prev-chip">🏋️ <strong>${ex.equipamento}</strong></div>` : ''}
+              ${ex.repeticoes ? `<div class="prev-chip">🔁 <strong>${ex.repeticoes}</strong></div>` : ''}
+              ${ex.cadencia ? `<div class="prev-chip">⚡ <strong>${ex.cadencia}</strong></div>` : ''}
+            </div>
+            ${ex.observacoes_seguranca ? `<div class="prev-obs">⚠️ <strong>Atenção:</strong> ${ex.observacoes_seguranca}</div>` : ''}
+            ${ex.adaptacao_possivel ? `<div class="prev-adapt">🔄 <strong>Adaptação:</strong> ${ex.adaptacao_possivel}</div>` : ''}
+            ${vidId ? `<div style="margin-top:8px;font-size:12px;color:#555">▶️ Vídeo disponível</div>` : ''}
+          </div>`;
+      }).join('');
+
+      return `
+        <div class="prev-section">
+          <div class="prev-section-header">
+            <div class="prev-section-num">${i + 1}</div>
+            <span class="prev-section-title">BLOCO ${b.numero_bloco}</span>
+            <div class="prev-section-meta">
+              ${b.numero_series ? `<span>${b.numero_series} séries</span>` : ''}
+              ${b.descanso_entre_series ? `<span>Descanso: ${b.descanso_entre_series}</span>` : ''}
+              ${b.tempo_estimado_minutos ? `<span>⏱ ${b.tempo_estimado_minutos} min</span>` : ''}
+            </div>
+          </div>
+          <div class="prev-section-body">
+            ${b.observacao_bloco ? `<div class="prev-bloco-obs">📋 <strong>Observação:</strong> ${b.observacao_bloco}</div>` : ''}
+            ${exHTML}
+          </div>
+        </div>`;
+    }).join('');
+
+    const rodapeHTML = (t.alongamento || t.observacoes_gerais) ? `
+      <div class="prev-section">
+        <div class="prev-section-header">
+          <div class="prev-section-num outline">R</div>
+          <span class="prev-section-title">RODAPÉ</span>
+        </div>
+        <div class="prev-section-body">
+          ${t.alongamento ? `<div style="margin-bottom:${t.observacoes_gerais ? '16px' : '0'}">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:8px">Alongamento</div>
+            <div class="prev-rodape-text">${t.alongamento}</div>
+          </div>` : ''}
+          ${t.observacoes_gerais ? `<div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:8px">Observações Gerais</div>
+            <div class="prev-rodape-text">${t.observacoes_gerais}</div>
+          </div>` : ''}
+        </div>
+      </div>` : '';
+
+    return `
+      <div class="prev-hero">
+        <div class="prev-modalidade">${t.modalidade}</div>
+        <div class="prev-titulo">${t.dia_semana.toUpperCase()} — ${t.foco_muscular.toUpperCase()}</div>
+        <div class="prev-tags">${tags}</div>
+        ${t.equipamentos ? `<div class="prev-materials"><strong>Materials:</strong> ${t.equipamentos}</div>` : ''}
+      </div>
+      ${aquecHTML}
+      ${blocosHTML}
+      ${rodapeHTML}
+      ${t.mentor_responsavel ? `<div class="prev-mentor">Treino criado por ${t.mentor_responsavel} · Hit Haus</div>` : ''}
     `;
   }
 
@@ -2226,10 +2400,32 @@
     }
 
     const MESES_CARD = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const hoje = new Date().toISOString().split('T')[0];
     lista.innerHTML = filtrados.map(t => {
       const mesAno = t.data_aula ? `${MESES_CARD[parseInt(t.data_aula.substring(5,7))]}/${t.data_aula.substring(0,4)}` : '—';
+
+      // Calcular status de visibilidade
+      let statusClass = '';
+      let statusBadge = '';
+      let btnPreview = '';
+
+      if (t.data_inicio && t.data_expiracao) {
+        if (hoje < t.data_inicio) {
+          // Treino futuro
+          const dataInicioFormatada = new Date(t.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR');
+          statusClass = 'treino-item-futuro';
+          statusBadge = `<div class="treino-badge-futuro">⏳ Visível em: ${dataInicioFormatada}</div>`;
+          btnPreview = `<button class="btn-preview-futuro" onclick="event.stopPropagation(); abrirPreviewTreino('${t.id}')">👁 Preview</button>`;
+        } else if (hoje > t.data_expiracao) {
+          // Treino expirado
+          const dataExpFormatada = new Date(t.data_expiracao + 'T12:00:00').toLocaleDateString('pt-BR');
+          statusClass = 'treino-item-expirado';
+          statusBadge = `<div class="treino-badge-expirado">🔒 Expirado em: ${dataExpFormatada}</div>`;
+        }
+      }
+
       return `
-      <div class="treino-item">
+      <div class="treino-item ${statusClass}">
         <div class="treino-item-info">
           <div class="treino-item-titulo">${t.modalidade} — ${t.dia_semana} · ${t.foco_muscular}</div>
           <div class="treino-item-meta">
@@ -2237,12 +2433,14 @@
             <span>${mesAno}</span>
             <span>${t.mentor_responsavel}</span>
           </div>
+          ${statusBadge}
           ${t._grupos && t._grupos.length ? `
             <div class="treino-grupos">
               ${t._grupos.map(g => `<span class="grupo-tag">${g}</span>`).join('')}
             </div>` : ''}
         </div>
         <div class="treino-item-acoes">
+          ${btnPreview}
           <button class="btn-editar" onclick="carregarTreinoParaEdicao('${t.id}')">✏️ Editar</button>
           <button class="btn-deletar" onclick="deletarTreino('${t.id}', '${t.modalidade} ${t.dia_semana}')">🗑️</button>
         </div>
