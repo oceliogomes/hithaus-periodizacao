@@ -1419,7 +1419,7 @@
     lista.classList.add('open');
 
     try {
-      let url = `${SUPABASE_URL}/rest/v1/exercicios?select=nome,material,repeticoes,cadencia,observacoes_seguranca,adaptacao_possivel,link_youtube,grupo_movimento,bloco_id,blocos!inner(treino_id,treinos!inner(modalidade))&blocos.treinos.modalidade=eq.${encodeURIComponent(modalidade)}&order=nome`;
+      let url = `${SUPABASE_URL}/rest/v1/exercicios?select=nome,equipamento,repeticoes,cadencia,observacoes_seguranca,adaptacao_possivel,link_youtube,grupo_movimento,bloco_id,blocos!inner(treino_id,treinos!inner(modalidade))&blocos.treinos.modalidade=eq.${encodeURIComponent(modalidade)}&order=nome`;
 
       if (grupo) url += `&grupo_movimento=eq.${encodeURIComponent(grupo)}`;
       if (termo.length >= 2) url += `&nome=ilike.*${encodeURIComponent(termo)}*`;
@@ -1460,7 +1460,7 @@
           <span class="autocomplete-item-nome">${ex.nome}</span>
           <span class="autocomplete-item-meta">
             ${ex.grupo_movimento ? '<b>' + ex.grupo_movimento + '</b>' : ''}
-            ${ex.material ? '· ' + ex.material : ''}
+            ${ex.equipamento ? '· ' + ex.equipamento : ''}
             ${ex.repeticoes ? '· ' + ex.repeticoes : ''}
           </span>
         `;
@@ -1510,7 +1510,7 @@
       if (el && val) el.value = val;
     };
     set('nome', ex.nome);
-    set('equip', ex.material);
+    set('equip', ex.equipamento);
     set('reps', ex.repeticoes);
     set('cadencia', ex.cadencia);
     set('obs', ex.observacoes_seguranca);
@@ -1976,7 +1976,7 @@
 
           const set = (campo, val) => { const el = document.getElementById(`ex-${exId}-${campo}`); if (el && val) el.value = val; };
           set('nome', ex.nome);
-          set('equip', ex.material);
+          set('equip', ex.equipamento);
           set('reps', ex.repeticoes);
           set('cadencia', ex.cadencia);
           set('obs', ex.observacoes_seguranca);
