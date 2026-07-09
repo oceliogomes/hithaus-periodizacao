@@ -895,8 +895,9 @@
             <div class="dia-info">
               <div class="dia-foco">${t.foco_muscular}</div>
               <div class="dia-meta">
-                  ${t.tempo_total_minutos ? `<span>⏱ ${t.tempo_total_minutos} min</span>` : ''}
+                ${t.semana_mes ? `<span>Treino ${t.semana_mes}</span>` : ''}
                 ${t.mentor_responsavel ? `<span>👤 ${t.mentor_responsavel}</span>` : ''}
+                ${t.tempo_total_minutos ? `<span>⏱ ${t.tempo_total_minutos} min</span>` : ''}
               </div>
             </div>
           </div>
