@@ -2138,18 +2138,7 @@
 
     try {
       // Se está editando, deleta o treino antigo primeiro (CASCADE apaga blocos e exercícios)
-      if (treinoEditandoId) {
-        await fetch(`${SUPABASE_URL}/rest/v1/treinos?id=eq.${treinoEditandoId}`, {
-          method: 'DELETE',
-          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-        });
-        await fetch(`${SUPABASE_URL}/rest/v1/aquecimento?treino_id=eq.${treinoEditandoId}`, {
-          method: 'DELETE',
-          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-        });
-      }
-
-      // 1. Inserir treino
+      // 1. Montar payload do treino
       const treinoPayload = {
         modalidade,
         dia_semana,
@@ -2169,20 +2158,58 @@
       const aquecDesc = document.getElementById('aquecimento_descricao').value.trim();
       const aquecTempo = parseInt(document.getElementById('aquecimento_tempo').value) || null;
 
-      const resTreino = await fetch(`${SUPABASE_URL}/rest/v1/treinos`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Prefer': 'return=representation'
-        },
-        body: JSON.stringify(treinoPayload)
-      });
+      let treino_id;
 
-      if (!resTreino.ok) throw new Error('Erro ao salvar treino.');
-      const treinoData = await resTreino.json();
-      const treino_id = treinoData[0].id;
+      if (treinoEditandoId) {
+        // EDIÇÃO: atualiza o treino existente (PATCH) — nunca deleta
+        const resUpdate = await fetch(`${SUPABASE_URL}/rest/v1/treinos?id=eq.${treinoEditandoId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify(treinoPayload)
+        });
+        if (!resUpdate.ok) throw new Error('Erro ao atualizar treino.');
+        treino_id = treinoEditandoId;
+
+        // Deleta apenas blocos e exercícios antigos (não o treino)
+        const blocosAntigos = await fetch(`${SUPABASE_URL}/rest/v1/blocos?treino_id=eq.${treino_id}&select=id`, {
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+        }).then(r => r.json());
+
+        for (const b of blocosAntigos) {
+          await fetch(`${SUPABASE_URL}/rest/v1/exercicios?bloco_id=eq.${b.id}`, {
+            method: 'DELETE',
+            headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+          });
+        }
+        await fetch(`${SUPABASE_URL}/rest/v1/blocos?treino_id=eq.${treino_id}`, {
+          method: 'DELETE',
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+        });
+        await fetch(`${SUPABASE_URL}/rest/v1/aquecimento?treino_id=eq.${treino_id}`, {
+          method: 'DELETE',
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+        });
+      } else {
+        // NOVO: insere treino
+        const resTreino = await fetch(`${SUPABASE_URL}/rest/v1/treinos`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify(treinoPayload)
+        });
+        if (!resTreino.ok) throw new Error('Erro ao salvar treino.');
+        const treinoData = await resTreino.json();
+        treino_id = treinoData[0].id;
+      }
 
       // 2. Salvar aquecimento na tabela dedicada
       if (aquecDesc) {
