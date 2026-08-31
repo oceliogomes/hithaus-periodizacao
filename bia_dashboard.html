@@ -111,10 +111,13 @@ canvas{width:100%!important}
       <div class="secao">
         <div class="secao-titulo">IMPACTO FINANCEIRO</div>
         <div class="cards-grid">
-          <div class="card"><div class="card-label">Vendas via Bia</div><div class="card-valor destaque" id="total-valor">R$ 0</div><div class="card-sub">no período</div></div>
+          <div class="card card-clicavel" id="card-total-valor"><div class="card-label">Vendas via Bia</div><div class="card-valor destaque" id="total-valor">R$ 0</div><div class="card-sub">no período</div></div>
           <div class="card"><div class="card-label">Conversões</div><div class="card-valor" id="total-conversoes">0</div><div class="card-sub">vendas influenciadas</div></div>
           <div class="card"><div class="card-label">Ticket Médio</div><div class="card-valor" id="ticket-medio">R$ 0</div><div class="card-sub">por venda via Bia</div></div>
           <div class="card"><div class="card-label">Novos Assinantes</div><div class="card-valor" id="novos-assinantes">0</div><div class="card-sub">1ª assinatura via Bia</div></div>
+        </div>
+        <div style="color:#666;font-size:12px;margin-top:8px">
+          Critério de venda: atendimento feito pela Bia, com valor pago maior que R$ 0, compra avulsa (não recorrente/assinatura), excluindo cortesias. Clique no valor para ver as vendas registradas.
         </div>
       </div>
 
@@ -177,6 +180,7 @@ var grafN = null;
 var grafH = null;
 var csatEnviadas = [];
 var csatRespondidas = [];
+var vendasCompletas = [];
 
 document.getElementById('btn-login').addEventListener('click', function() {
   var redirectTo = window.location.href;
@@ -304,6 +308,7 @@ async function carregarFinanceiro(inicio, fim) {
   var totalValor = vendas.reduce(function(s, v) { return s + (parseFloat(v.valor) || 0); }, 0);
   var totalConv = vendas.length;
   var ticketMedio = totalConv > 0 ? totalValor / totalConv : 0;
+  vendasCompletas = vendas;
 
   var assinantes = await qBia('conversoes',
     'atendida_pela_bia=eq.true&is_subscription=eq.true&data_compra=gte.' + inicio + '&data_compra=lte.' + fim
@@ -505,10 +510,46 @@ function linhaAuditoria(r) {
   }
 }
 
+var THEAD_CSAT = '<tr><th>Nome</th><th>Nota</th><th>Respondeu em</th><th>Conversa</th></tr>';
+
+function sortCsat(a, b) {
+  return new Date(b.data_resposta || b.data_envio) - new Date(a.data_resposta || a.data_envio);
+}
+
+function linhaVenda(v) {
+  try {
+    var linkConversa = v.conversation_id
+      ? '<a href="https://oceaniccarp-chatwoot.cloudfy.live/app/accounts/1/conversations/' + v.conversation_id + '" target="_blank">abrir ↗</a>'
+      : '—';
+    var valorTexto = 'R$ ' + (parseFloat(v.valor) || 0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+    var quando = '—';
+    try { quando = v.data_compra ? formatarDataHora(v.data_compra) : '—'; } catch (eData) { quando = '(data inválida)'; }
+    return '<tr>'
+      + '<td>' + (v.nome || 'Sem nome') + '</td>'
+      + '<td>' + (v.telefone || '—') + '</td>'
+      + '<td>' + (v.produto || '—') + '</td>'
+      + '<td>' + valorTexto + '</td>'
+      + '<td>' + quando + '</td>'
+      + '<td>' + linkConversa + '</td>'
+      + '</tr>';
+  } catch (e) {
+    console.warn('Registro com problema ao renderizar, mostrando mesmo assim:', v, e);
+    return '<tr><td colspan="6" style="color:#ff8888">' + (v.nome || v.telefone || 'Registro #' + v.id || 'desconhecido') + ' — erro ao exibir detalhes (veja console)</td></tr>';
+  }
+}
+
+var THEAD_VENDAS = '<tr><th>Nome</th><th>Telefone</th><th>Produto</th><th>Valor</th><th>Data</th><th>Conversa</th></tr>';
+
+function sortVendas(a, b) {
+  return new Date(b.data_compra) - new Date(a.data_compra);
+}
+
+var renderLinhaAtual = linhaAuditoria;
+
 function renderizarProximoLote() {
   var lote = listaAuditoriaCompleta.slice(listaAuditoriaExibidas, listaAuditoriaExibidas + LISTA_PAGINA_TAMANHO);
   var tbody = document.getElementById('lista-auditoria-tbody');
-  lote.forEach(function(r) { tbody.insertAdjacentHTML('beforeend', linhaAuditoria(r)); });
+  lote.forEach(function(r) { tbody.insertAdjacentHTML('beforeend', renderLinhaAtual(r)); });
   listaAuditoriaExibidas += lote.length;
 
   var btn = document.getElementById('btn-mostrar-mais');
@@ -521,15 +562,19 @@ function renderizarProximoLote() {
   }
 }
 
-function mostrarListaAuditoria(titulo, lista) {
-  listaAuditoriaCompleta = lista.slice().sort(function(a, b) {
-    return new Date(b.data_resposta || b.data_envio) - new Date(a.data_resposta || a.data_envio);
-  });
+function mostrarListaAuditoria(titulo, lista, renderLinha, theadHtml, sortFn) {
+  renderLinha = renderLinha || linhaAuditoria;
+  theadHtml = theadHtml || THEAD_CSAT;
+  sortFn = sortFn || sortCsat;
+  var numColunas = (theadHtml.match(/<th>/g) || []).length || 4;
+
+  renderLinhaAtual = renderLinha;
+  listaAuditoriaCompleta = lista.slice().sort(sortFn);
   listaAuditoriaExibidas = 0;
 
-  var html = '<table class="tabela-auditoria"><thead><tr><th>Nome</th><th>Nota</th><th>Respondeu em</th><th>Conversa</th></tr></thead><tbody id="lista-auditoria-tbody">';
+  var html = '<table class="tabela-auditoria"><thead>' + theadHtml + '</thead><tbody id="lista-auditoria-tbody">';
   if (listaAuditoriaCompleta.length === 0) {
-    html += '<tr><td colspan="4" style="color:#555;text-align:center;padding:24px">Nenhum registro encontrado nesse filtro.</td></tr>';
+    html += '<tr><td colspan="' + numColunas + '" style="color:#555;text-align:center;padding:24px">Nenhum registro encontrado nesse filtro.</td></tr>';
   }
   html += '</tbody></table><button id="btn-mostrar-mais" class="btn-logout" style="display:none;margin-top:16px;width:100%">Mostrar mais</button>';
 
@@ -558,6 +603,9 @@ document.getElementById('card-taxa-resposta').addEventListener('click', function
 document.getElementById('card-promotores').addEventListener('click', function() {
   var promotoresLista = csatRespondidas.filter(function(r) { return r.nota >= 9; });
   mostrarListaAuditoria('Promotores (nota 9 ou 10)', promotoresLista);
+});
+document.getElementById('card-total-valor').addEventListener('click', function() {
+  mostrarListaAuditoria('Vendas via Bia', vendasCompletas, linhaVenda, THEAD_VENDAS, sortVendas);
 });
 document.getElementById('btn-fechar-lista').addEventListener('click', esconderListaAuditoria);
 
