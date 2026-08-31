@@ -194,14 +194,24 @@ function sair() {
 
 async function qBia(tabela, params) {
   var url = SUPA_BIA_URL + '/rest/v1/' + tabela + '?' + (params || '');
-  var res = await fetch(url, {
-    headers: {
-      'apikey': SUPA_BIA_KEY,
-      'Authorization': 'Bearer ' + SUPA_BIA_KEY
-    }
-  });
-  var data = await res.json();
-  return Array.isArray(data) ? data : [];
+  var pageSize = 1000;
+  var offset = 0;
+  var todos = [];
+  while (true) {
+    var res = await fetch(url, {
+      headers: {
+        'apikey': SUPA_BIA_KEY,
+        'Authorization': 'Bearer ' + SUPA_BIA_KEY,
+        'Range': offset + '-' + (offset + pageSize - 1)
+      }
+    });
+    var data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) break;
+    todos = todos.concat(data);
+    if (data.length < pageSize) break;
+    offset += pageSize;
+  }
+  return todos;
 }
 
 function definirPeriodoAtual() {
