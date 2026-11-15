@@ -1014,6 +1014,12 @@
     <button class="btn-cancelar-edicao" onclick="cancelarEdicao()">Cancelar e criar novo</button>
   </div>
 
+  <!-- MODO REPETIÇÃO BAR -->
+  <div class="modo-edicao-bar" id="modo-repeticao-bar" style="background:#001a1a;border-color:#06b6d4">
+    <span class="modo-edicao-texto" style="color:#06b6d4">🔁 Repetindo treino — escolha as novas datas antes de salvar</span>
+    <button class="btn-cancelar-edicao" onclick="cancelarRepeticao()" style="border-color:#06b6d4;color:#06b6d4">Cancelar</button>
+  </div>
+
   <!-- TREINOS ANTERIORES -->
   <div id="secao-treinos-anteriores">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;cursor:pointer" onclick="toggleTreinosAnteriores()">
@@ -2494,6 +2500,7 @@
         </div>
         <div class="treino-item-acoes">
           ${btnPreview}
+          <button class="btn-editar" onclick="repetirTreino('${t.id}')">🔁 Repetir</button>
           <button class="btn-editar" onclick="carregarTreinoParaEdicao('${t.id}')">✏️ Editar</button>
           <button class="btn-deletar" onclick="deletarTreino('${t.id}', '${t.modalidade} ${t.dia_semana}')">🗑️</button>
         </div>
@@ -2580,7 +2587,8 @@
         }
       }
 
-      // Ativa barra de modo edição
+      // Ativa barra de modo edição (e garante que a barra de repetição não fique visível ao mesmo tempo)
+      document.getElementById('modo-repeticao-bar').classList.remove('ativo');
       document.getElementById('modo-edicao-bar').classList.add('ativo');
       document.getElementById('btn-label').textContent = 'SALVAR ALTERAÇÕES';
 
@@ -2600,6 +2608,113 @@
       showToast('Erro ao carregar treino: ' + e.message, 'error');
       treinoEditandoId = null;
     }
+  }
+
+  // ========================
+  // REPETIR TREINO — carrega um treino antigo no formulário pra reaplicar,
+  // mas SALVA COMO NOVO (nunca sobrescreve o treino original).
+  // ========================
+  async function repetirTreino(treinoId) {
+    showToast('Carregando treino para repetição...', 'success');
+    treinoEditandoId = null; // garante que salvarTreino() vai criar um treino NOVO
+    window._carregandoEdicao = true;
+
+    try {
+      const [treinos, aquecimentos, blocos] = await Promise.all([
+        fetch(`${SUPABASE_URL}/rest/v1/treinos?id=eq.${treinoId}`, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }).then(r => r.json()),
+        fetch(`${SUPABASE_URL}/rest/v1/aquecimento?treino_id=eq.${treinoId}`, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }).then(r => r.json()),
+        fetch(`${SUPABASE_URL}/rest/v1/blocos?treino_id=eq.${treinoId}&order=numero_bloco`, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }).then(r => r.json()),
+      ]);
+
+      const t = treinos[0];
+      if (!t) throw new Error('Treino não encontrado.');
+
+      // Preenche cabeçalho (mantém modalidade, dia, nº do treino, foco, mentor)
+      document.getElementById('modalidade').value = t.modalidade || '';
+      document.getElementById('dia_semana').value = t.dia_semana || '';
+      document.getElementById('semana_mes').value = t.semana_mes || '';
+      document.getElementById('foco_muscular').value = t.foco_muscular || '';
+      document.getElementById('mentor_responsavel').value = t.mentor_responsavel || '';
+      document.getElementById('alongamento').value = t.alongamento || '';
+      document.getElementById('observacoes_gerais').value = t.observacoes_gerais || '';
+
+      // Datas ficam em branco de propósito — o mentor é obrigado a escolher a
+      // nova janela antes de conseguir salvar (a validação de salvarTreino já exige isso).
+      document.getElementById('data_mes').value = '';
+      document.getElementById('data_ano').value = '';
+      document.getElementById('data_inicio').value = '';
+      document.getElementById('data_expiracao').value = '';
+
+      // Preenche aquecimento
+      if (aquecimentos[0]) {
+        document.getElementById('aquecimento_descricao').value = aquecimentos[0].descricao || '';
+        document.getElementById('aquecimento_tempo').value = aquecimentos[0].tempo_estimado_minutos || '';
+      }
+
+      // Limpa blocos existentes e recria com os exercícios do treino original
+      document.getElementById('blocos-container').innerHTML = '';
+      blocoCount = 0;
+      exCounters = {};
+
+      for (const bloco of blocos) {
+        adicionarBlocoSemExercicio();
+        const num = blocoCount;
+
+        document.getElementById(`b${num}_series`).value = bloco.numero_series || '';
+        document.getElementById(`b${num}_tempo`).value = bloco.tempo_estimado_minutos || '';
+        document.getElementById(`b${num}_descanso`).value = bloco.descanso_entre_series || '';
+        document.getElementById(`b${num}_obs`).value = bloco.observacao_bloco || '';
+
+        const exercicios = await fetch(`${SUPABASE_URL}/rest/v1/exercicios?bloco_id=eq.${bloco.id}&order=ordem`, {
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+        }).then(r => r.json());
+
+        for (const ex of exercicios) {
+          adicionarExercicio(num);
+          const exNum = exCounters[num];
+          const exId = `b${num}-${exNum}`;
+
+          const set = (campo, val) => { const el = document.getElementById(`ex-${exId}-${campo}`); if (el && val) el.value = val; };
+          set('nome', ex.nome);
+          set('equip', ex.equipamento);
+          set('reps', ex.repeticoes);
+          set('cadencia', ex.cadencia);
+          set('obs', ex.observacoes_seguranca);
+          set('adapt', ex.adaptacao_possivel);
+          set('video', ex.link_youtube);
+
+          if (ex.grupo_movimento) {
+            gruposAtivos[exId] = ex.grupo_movimento;
+            const chips = document.querySelectorAll(`#chips-${exId} .chip-grupo`);
+            chips.forEach(c => c.classList.toggle('ativo', c.textContent.trim() === ex.grupo_movimento));
+          }
+        }
+      }
+
+      // Ativa barra de modo repetição (e garante que a barra de edição não fique visível ao mesmo tempo)
+      document.getElementById('modo-edicao-bar').classList.remove('ativo');
+      document.getElementById('modo-repeticao-bar').classList.add('ativo');
+      document.getElementById('btn-label').textContent = 'SALVAR TREINO';
+
+      // Preenche materials DEPOIS dos blocos com proteção total (mesmo tratamento usado na edição)
+      const _equipVal = t.equipamentos || '';
+      const _matEl = document.getElementById('materials');
+      _matEl.value = _equipVal;
+      setTimeout(() => { document.getElementById('materials').value = _equipVal; }, 200);
+      setTimeout(() => { document.getElementById('materials').value = _equipVal; }, 500);
+      window._carregandoEdicao = false;
+
+      document.getElementById('formTreino').scrollIntoView({ behavior: 'smooth' });
+      showToast('Treino carregado para repetição. Escolha as novas datas antes de salvar.', 'success');
+
+    } catch(e) {
+      showToast('Erro ao carregar treino: ' + e.message, 'error');
+    }
+  }
+
+  function cancelarRepeticao() {
+    document.getElementById('modo-repeticao-bar').classList.remove('ativo');
+    location.reload();
   }
 
   async function deletarTreino(treinoId, nome) {
