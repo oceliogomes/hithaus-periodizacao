@@ -2372,28 +2372,46 @@
         headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
       });
       todosTreinosCache = await res.json();
+      todosTreinosCache.forEach(t => { t._grupos = []; });
 
-      // Busca grupos de movimento de cada treino
-      for (const t of todosTreinosCache) {
-        try {
-          const blocos = await fetch(`${SUPABASE_URL}/rest/v1/blocos?treino_id=eq.${t.id}&select=id`, {
+      // Busca os grupos de movimento de TODOS os treinos de uma vez só (em lote: 1 chamada
+      // pros blocos + 1 pros exercícios), em vez de uma pergunta por treino — antes isso
+      // virava dezenas/centenas de chamadas sequenciais conforme o catálogo crescia.
+      // Isolado no seu próprio try/catch: se essa parte falhar, a lista de treinos ainda
+      // aparece normalmente, só sem as tags de grupo muscular (mesmo comportamento de antes).
+      try {
+        if (todosTreinosCache.length) {
+          const treinoIds = todosTreinosCache.map(t => t.id).join(',');
+          const blocos = await fetch(`${SUPABASE_URL}/rest/v1/blocos?treino_id=in.(${treinoIds})&select=id,treino_id`, {
             headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
           }).then(r => r.json());
 
           if (blocos.length) {
             const blocoIds = blocos.map(b => b.id).join(',');
-            const exs = await fetch(`${SUPABASE_URL}/rest/v1/exercicios?bloco_id=in.(${blocoIds})&select=grupo_movimento`, {
+            const exs = await fetch(`${SUPABASE_URL}/rest/v1/exercicios?bloco_id=in.(${blocoIds})&select=bloco_id,grupo_movimento`, {
               headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
             }).then(r => r.json());
 
-            const grupos = [...new Set(exs.map(e => e.grupo_movimento).filter(Boolean))];
-            t._grupos = grupos;
-          } else {
-            t._grupos = [];
+            // Mapeia bloco -> treino, pra saber de qual treino cada exercício é
+            const treinoIdPorBloco = {};
+            blocos.forEach(b => { treinoIdPorBloco[b.id] = b.treino_id; });
+
+            // Acumula os grupos de movimento (sem repetir) por treino
+            const gruposPorTreino = {};
+            exs.forEach(ex => {
+              const treinoId = treinoIdPorBloco[ex.bloco_id];
+              if (!treinoId || !ex.grupo_movimento) return;
+              if (!gruposPorTreino[treinoId]) gruposPorTreino[treinoId] = new Set();
+              gruposPorTreino[treinoId].add(ex.grupo_movimento);
+            });
+
+            todosTreinosCache.forEach(t => {
+              if (gruposPorTreino[t.id]) t._grupos = [...gruposPorTreino[t.id]];
+            });
           }
-        } catch(e) {
-          t._grupos = [];
         }
+      } catch(eGrupos) {
+        // Mantém _grupos = [] em todos — a lista continua aparecendo normalmente.
       }
 
       renderListaTreinos();
