@@ -1032,6 +1032,11 @@
 
     <div id="treinos-lista-container">
 
+      <!-- BUSCA DE TREINOS -->
+      <div style="margin-bottom:12px">
+        <input type="text" id="busca-treinos" placeholder="🔎 Buscar por foco, modalidade, mentor ou nº do treino..." oninput="buscarTreinos(this.value)" autocomplete="off">
+      </div>
+
       <!-- FILTRO DE PERÍODO -->
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
         <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted)">Período:</span>
@@ -2339,6 +2344,12 @@
 
   let periodoFiltroAtual = 'mes';
   let todosTreinosCache = [];
+  let buscaFiltroAtual = '';
+
+  function buscarTreinos(valor) {
+    buscaFiltroAtual = (valor || '').toLowerCase().trim();
+    renderListaTreinos();
+  }
 
   function filtrarPeriodo(periodo, btn) {
     periodoFiltroAtual = periodo;
@@ -2413,6 +2424,15 @@
       return true;
     });
 
+    // Busca livre (foco, modalidade, mentor, dia, nº do treino) — aplicada depois do filtro de período
+    if (buscaFiltroAtual) {
+      filtrados = filtrados.filter(t => {
+        const alvo = [t.foco_muscular, t.modalidade, t.mentor_responsavel, t.semana_mes, t.dia_semana]
+          .filter(Boolean).join(' ').toLowerCase();
+        return alvo.includes(buscaFiltroAtual);
+      });
+    }
+
     // Ordena por data mais recente primeiro, depois por dia
     filtrados.sort((a, b) => {
       if (a.data_aula && b.data_aula) return b.data_aula.localeCompare(a.data_aula);
@@ -2420,7 +2440,10 @@
     });
 
     if (!filtrados.length) {
-      lista.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:16px 0">Nenhum treino encontrado para este período.</div>';
+      const msg = buscaFiltroAtual
+        ? 'Nenhum treino encontrado com esse termo de busca.'
+        : 'Nenhum treino encontrado para este período.';
+      lista.innerHTML = `<div style="color:var(--text-muted);font-size:13px;padding:16px 0">${msg}</div>`;
       resumoDiv.style.display = 'none';
       return;
     }
